@@ -21,13 +21,14 @@
   <a href="https://github.com/hariharanragothaman/dockpulse/pulls"><img src="https://img.shields.io/github/issues-pr/hariharanragothaman/dockpulse?style=flat-square&logo=github" alt="Pull Requests"></a>
 </p>
 
-<!-- TODO: Uncomment these once published to PyPI and Docker Hub
 <p align="center">
-  <a href="https://pypi.org/project/dockpulse/"><img src="https://img.shields.io/pypi/v/dockpulse?style=flat-square&logo=pypi&logoColor=white&color=3775A9" alt="PyPI Version"></a>
-  <a href="https://pypi.org/project/dockpulse/"><img src="https://img.shields.io/pypi/dm/dockpulse?style=flat-square&logo=pypi&logoColor=white&label=downloads" alt="PyPI Downloads"></a>
   <a href="https://hub.docker.com/r/hariharanragothaman/dockpulse"><img src="https://img.shields.io/docker/pulls/hariharanragothaman/dockpulse?style=flat-square&logo=docker&logoColor=white" alt="Docker Pulls"></a>
   <a href="https://hub.docker.com/r/hariharanragothaman/dockpulse"><img src="https://img.shields.io/docker/image-size/hariharanragothaman/dockpulse?style=flat-square&logo=docker&logoColor=white&label=image%20size" alt="Docker Image Size"></a>
 </p>
+
+<!-- TODO: Uncomment once published to PyPI
+  <a href="https://pypi.org/project/dockpulse/"><img src="https://img.shields.io/pypi/v/dockpulse?style=flat-square&logo=pypi&logoColor=white&color=3775A9" alt="PyPI Version"></a>
+  <a href="https://pypi.org/project/dockpulse/"><img src="https://img.shields.io/pypi/dm/dockpulse?style=flat-square&logo=pypi&logoColor=white&label=downloads" alt="PyPI Downloads"></a>
 -->
 
 <p align="center">
