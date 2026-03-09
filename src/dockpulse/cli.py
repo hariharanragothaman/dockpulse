@@ -934,6 +934,182 @@ def export_metrics(
         console.print("\n[yellow]Exporter stopped.[/yellow]")
 
 
+@app.command()
+def cost(
+    provider: str = typer.Option(
+        "aws",
+        "--provider",
+        "-p",
+        help="Cloud provider: aws, gcp, azure.",
+    ),
+    hours: float = typer.Option(
+        730.0,
+        "--hours",
+        help="Monthly running hours (default 730 = 24x365/12).",
+    ),
+    headroom: float = typer.Option(
+        20.0,
+        "--headroom",
+        "-H",
+        help="Headroom percentage for right-sizing recommendations.",
+    ),
+    fmt: str = typer.Option(
+        "rich",
+        "--format",
+        "-f",
+        help="Output format: rich, json.",
+    ),
+) -> None:
+    """Estimate cloud infrastructure costs and potential savings.
+
+    Maps container resource usage to real-world cloud pricing
+    (AWS Fargate, GCP Cloud Run, Azure ACI) and shows how much
+    you could save by right-sizing.
+    """
+    from dockpulse.cost import CostEstimator
+
+    db = str(_config.resolved_db_path)
+    profiles = _load_profiles_from_db(db)
+
+    sizer = RightSizer(headroom_percent=headroom)
+    recommendations = [sizer.recommend(p) for p in profiles]
+
+    try:
+        estimator = CostEstimator(provider=provider, monthly_hours=hours)
+    except ValueError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(1) from exc
+
+    report = estimator.generate_report(profiles, recommendations)
+
+    if fmt == "json":
+        data = {
+            "provider": report.provider,
+            "monthly_hours": report.monthly_hours,
+            "total_current_cost": report.total_current_cost,
+            "total_optimized_cost": report.total_optimized_cost,
+            "total_savings": report.total_savings,
+            "estimates": [
+                {
+                    "container": e.container_name,
+                    "current": e.current_monthly_cost,
+                    "optimized": e.optimized_monthly_cost,
+                    "savings": e.monthly_savings,
+                }
+                for e in report.estimates
+            ],
+        }
+        console.print_json(json.dumps(data, indent=2))
+        return
+
+    table = Table(
+        title=f"Cloud Cost Estimate ({report.provider})",
+        title_style="bold cyan",
+        expand=True,
+        border_style="bright_blue",
+    )
+    table.add_column("Container", style="bold", no_wrap=True)
+    table.add_column("Current $/mo", justify="right")
+    table.add_column("Optimized $/mo", justify="right")
+    table.add_column("Savings $/mo", justify="right")
+
+    for e in report.estimates:
+        savings_style = "green" if e.monthly_savings > 0 else "dim"
+        table.add_row(
+            e.container_name,
+            f"${e.current_monthly_cost:.2f}",
+            f"${e.optimized_monthly_cost:.2f}",
+            Text(f"${e.monthly_savings:.2f}", style=savings_style),
+        )
+
+    table.add_section()
+    table.add_row(
+        Text("TOTAL", style="bold"),
+        Text(f"${report.total_current_cost:.2f}", style="bold"),
+        Text(f"${report.total_optimized_cost:.2f}", style="bold"),
+        Text(f"${report.total_savings:.2f}", style="bold green"),
+    )
+
+    console.print(table)
+    console.print(
+        f"\n[dim]Based on {report.monthly_hours:.0f} hours/month "
+        f"at {report.provider} pricing.[/dim]"
+    )
+
+
+@app.command()
+def startup(
+    image: str = typer.Argument(None, help="Docker image to profile (e.g. nginx:latest)"),
+    compose: str | None = typer.Option(
+        None,
+        "--compose",
+        "-C",
+        help="Path to docker-compose.yml to profile all services.",
+    ),
+    runs: int = typer.Option(3, "--runs", "-n", help="Number of runs to average."),
+    fmt: str = typer.Option("rich", "--format", "-f", help="Output format: rich, json."),
+) -> None:
+    """Profile container startup times.
+
+    Measures how long containers take from creation to running state,
+    and optionally from running to healthy (if a healthcheck is defined).
+    """
+    from dockpulse.startup import StartupProfiler
+
+    if not image and not compose:
+        console.print("[red]Provide an image name or --compose path.[/red]")
+        raise typer.Exit(1)
+
+    profiler = StartupProfiler()
+
+    if compose:
+        console.print(f"[bold cyan]Profiling compose services from {compose}...[/bold cyan]")
+        results = profiler.profile_compose_startup(compose, runs=runs)
+    else:
+        console.print(f"[bold cyan]Profiling {image} ({runs} run(s))...[/bold cyan]")
+        results = [profiler.profile_startup(image, runs=runs)]
+
+    if fmt == "json":
+        import dataclasses
+
+        data = [dataclasses.asdict(r) for r in results]
+        console.print_json(json.dumps(data, indent=2))
+        return
+
+    table = Table(
+        title="Startup Time Profile",
+        title_style="bold cyan",
+        expand=True,
+        border_style="bright_blue",
+    )
+    table.add_column("Container", style="bold", no_wrap=True)
+    table.add_column("Image", style="dim")
+    table.add_column("Create→Running", justify="right")
+    table.add_column("Running→Healthy", justify="right")
+    table.add_column("Total", justify="right")
+    table.add_column("Image Size", justify="right")
+    table.add_column("Healthcheck", justify="center")
+
+    for r in results:
+        healthy_str = f"{r.running_to_healthy_ms:.0f}ms" if r.has_healthcheck else "—"
+        total_style = (
+            "green"
+            if r.total_startup_ms < 2000
+            else ("yellow" if r.total_startup_ms < 5000 else "red")
+        )
+        table.add_row(
+            r.container_name,
+            r.image,
+            f"{r.create_to_running_ms:.0f}ms",
+            healthy_str,
+            Text(f"{r.total_startup_ms:.0f}ms", style=total_style),
+            f"{r.image_size_mb:.1f} MB",
+            Text("✓", style="green") if r.has_healthcheck else Text("✗", style="dim"),
+        )
+
+    console.print(table)
+
+
 def _ensure_sessions_table(db_path: str) -> None:
     """Create the sessions table if it doesn't already exist."""
     Path(db_path).parent.mkdir(parents=True, exist_ok=True)

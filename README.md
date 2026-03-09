@@ -59,6 +59,9 @@ DockPulse fills this gap. It profiles your containers over time, computes percen
 - **Live Dashboard** -- Real-time Rich terminal UI with CPU sparklines, memory bars, and color-coded health indicators
 - **SQLite Persistence** -- All profiling data is stored locally with zero external dependencies
 - **Multiple Output Formats** -- Terminal (Rich), JSON, and styled HTML reports
+- **Cloud Cost Estimation** -- Map resource waste to real dollar amounts for AWS Fargate, GCP Cloud Run, and Azure ACI with per-container savings breakdown
+- **Grafana Dashboard** -- Pre-built Grafana dashboard with 5 rows of panels covering CPU, memory, network, disk I/O, and PIDs across all monitored containers
+- **Startup Time Profiling** -- Measure container startup times (create → running → healthy) with multi-run averaging and compose-file support
 
 ## Quick Start
 
@@ -223,6 +226,69 @@ You are wasting 2.73 GB of memory and 2.1 CPU cores across 3 containers.
 Right-size with: dockpulse right-size docker-compose.yml
 ```
 
+### `dockpulse cost`
+
+Estimate cloud infrastructure costs and potential savings.
+
+| Option | Default | Description |
+|---|---|---|
+| `--provider`, `-p` | `aws` | Cloud provider: `aws`, `gcp`, `azure` |
+| `--hours` | `730` | Monthly running hours |
+| `--headroom`, `-H` | `20` | Headroom percentage for right-sizing |
+| `--format`, `-f` | `rich` | Output format: `rich`, `json` |
+
+```
+$ dockpulse cost --provider aws
+Cloud Cost Estimate (aws_fargate)
+Container   Current $/mo   Optimized $/mo   Savings $/mo
+web         $32.14         $18.72           $13.42
+db          $48.90         $27.55           $21.35
+redis       $8.21          $2.10            $6.11
+─────────────────────────────────────────────────────────
+TOTAL       $89.25         $48.37           $40.88
+
+Based on 730 hours/month at aws_fargate pricing.
+```
+
+### `dockpulse startup`
+
+Profile container startup times.
+
+| Argument / Option | Default | Description |
+|---|---|---|
+| `IMAGE` | -- | Docker image to profile |
+| `--compose`, `-C` | -- | Path to docker-compose.yml |
+| `--runs`, `-n` | `3` | Number of runs to average |
+| `--format`, `-f` | `rich` | Output format: `rich`, `json` |
+
+```
+$ dockpulse startup nginx:latest --runs 5
+Startup Time Profile
+Container   Image          Create→Running   Running→Healthy   Total      Image Size   Healthcheck
+nginx       nginx:latest   142ms            —                 142ms      187.8 MB     ✗
+```
+
+### Grafana Dashboard
+
+DockPulse ships with a pre-built Grafana dashboard. To use it with the bundled Prometheus setup:
+
+```bash
+cd examples/prometheus
+docker compose up -d
+dockpulse export --port 9090   # start the Prometheus exporter
+
+# Open Grafana at http://localhost:3000 (admin/admin)
+# The "DockPulse - Container Resource Overview" dashboard is auto-provisioned
+```
+
+The dashboard includes:
+- **Overview row** -- stat panels for total containers, avg CPU%, avg memory%, total network I/O
+- **CPU row** -- time series of CPU usage per container with threshold lines
+- **Memory row** -- time series of memory usage vs limits, plus memory utilization gauges
+- **Network & Disk I/O row** -- time series of RX/TX bytes and block read/write
+- **Processes row** -- time series of PID counts per container
+- **Template variable** -- `$container` dropdown to filter by specific containers
+
 ## Architecture
 
 ### Data Flow
@@ -273,6 +339,8 @@ flowchart TD
     ComposeRewriterMod["compose_rewriter.py"]
     VisualizerMod["visualizer.py"]
     PrometheusMod["prometheus.py"]
+    CostMod["cost.py"]
+    StartupMod["startup.py"]
 
     CLI --> Collector
     CLI --> AnalyzerMod
@@ -282,6 +350,8 @@ flowchart TD
     CLI --> ComposeRewriterMod
     CLI --> VisualizerMod
     CLI --> PrometheusMod
+    CLI --> CostMod
+    CLI --> StartupMod
     CLI --> Config
     CLI --> Models
     Collector --> Models
@@ -290,6 +360,8 @@ flowchart TD
     ReporterMod --> Models
     RightSizerMod --> Models
     ComposeRewriterMod --> Models
+    CostMod --> Models
+    StartupMod --> Models
     PrometheusMod --> Collector
 ```
 
@@ -309,6 +381,8 @@ flowchart TD
     Stack["stack"]
     Clean["clean"]
     Export["export"]
+    Cost["cost"]
+    Startup["startup"]
 
     CLI --> Profile
     CLI --> Analyze
@@ -321,6 +395,8 @@ flowchart TD
     CLI --> Stack
     CLI --> Clean
     CLI --> Export
+    CLI --> Cost
+    CLI --> Startup
 
     Profile ---|"collect stats over time"| SQLite["SQLite DB"]
     Analyze ---|"percentile analysis"| TermOut["Terminal / JSON / HTML"]
@@ -333,6 +409,8 @@ flowchart TD
     Stack ---|"multi-container analysis"| StackOut["Rankings + Bottleneck"]
     Clean ---|"delete data"| CleanDB["SQLite Cleanup"]
     Export ---|"Prometheus metrics"| MetricsOut["/metrics endpoint"]
+    Cost ---|"cloud pricing"| CostOut["Cost Report"]
+    Startup ---|"timing analysis"| StartupOut["Startup Profile"]
 ```
 
 DockPulse talks directly to the Docker daemon via the Docker SDK for Python. Stats are collected using the `/containers/{id}/stats` API endpoint and persisted to a local SQLite database for offline analysis.
@@ -361,9 +439,9 @@ The right-sizing engine applies a configurable headroom percentage on top of obs
 - [x] Session management and comparison
 - [x] Multi-container stack analysis
 - [ ] Slack / Discord alert integration
-- [ ] Cost estimation (map waste to cloud provider pricing)
-- [ ] Grafana dashboard templates
-- [ ] Container startup time profiling
+- [x] Cost estimation (map waste to cloud provider pricing)
+- [x] Grafana dashboard templates
+- [x] Container startup time profiling
 - [x] PyPI package publishing with auto-versioning
 
 ## Contributing

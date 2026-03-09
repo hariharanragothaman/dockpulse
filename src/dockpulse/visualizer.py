@@ -10,7 +10,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 if TYPE_CHECKING:
-    from dockpulse.models import HistoricalComparison, ProfileResult, StackAnalysis
+    from dockpulse.models import CostReport, HistoricalComparison, ProfileResult, StackAnalysis
 
 # ---------------------------------------------------------------------------
 # DockPulse brand palette
@@ -692,5 +692,57 @@ class Visualizer:
             fig,
             title=dict(text="Memory Utilization by Service", font=dict(size=15)),
             height=max(280, 250 * rows),
+        )
+        return _fig_to_div(fig)
+
+    # ==================================================================
+    # Cost chart builder
+    # ==================================================================
+
+    def generate_cost_chart(self, report: CostReport) -> str:
+        """Generate a grouped bar chart comparing current vs optimized cost."""
+        names = [e.container_name for e in report.estimates]
+        current = [e.current_monthly_cost for e in report.estimates]
+        optimized = [e.optimized_monthly_cost for e in report.estimates]
+        savings = [e.monthly_savings for e in report.estimates]
+
+        fig = go.Figure()
+        fig.add_trace(
+            go.Bar(
+                x=names,
+                y=current,
+                name="Current $/mo",
+                marker_color=_DANGER,
+                hovertemplate="$%{y:.2f}/mo<extra>Current</extra>",
+            )
+        )
+        fig.add_trace(
+            go.Bar(
+                x=names,
+                y=optimized,
+                name="Optimized $/mo",
+                marker_color=_SUCCESS,
+                hovertemplate="$%{y:.2f}/mo<extra>Optimized</extra>",
+            )
+        )
+        fig.add_trace(
+            go.Bar(
+                x=names,
+                y=savings,
+                name="Savings $/mo",
+                marker_color=_PRIMARY,
+                hovertemplate="$%{y:.2f}/mo<extra>Savings</extra>",
+            )
+        )
+
+        _apply_layout(
+            fig,
+            title=dict(
+                text=f"Cloud Cost Comparison ({report.provider})",
+                font=dict(size=15),
+            ),
+            barmode="group",
+            yaxis_title="USD / month",
+            height=400,
         )
         return _fig_to_div(fig)

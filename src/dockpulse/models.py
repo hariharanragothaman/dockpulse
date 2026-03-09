@@ -132,3 +132,49 @@ class HistoricalComparison:
     memory_p95_delta_mb: float
     cpu_trend: str  # "increasing", "decreasing", "stable"
     memory_trend: str  # "increasing", "decreasing", "stable"
+
+
+@dataclass(frozen=True, slots=True)
+class CloudPricing:
+    """Pricing rates for a cloud container service."""
+
+    provider: str  # "aws_fargate", "gcp_cloud_run", "azure_aci"
+    vcpu_per_hour: float
+    memory_per_gb_hour: float
+    region: str
+
+
+@dataclass(frozen=True, slots=True)
+class CostEstimate:
+    """Cost estimate for a single container."""
+
+    container_name: str
+    current_monthly_cost: float
+    optimized_monthly_cost: float
+    monthly_savings: float
+    provider: str
+
+
+@dataclass(slots=True)
+class CostReport:
+    """Aggregate cost report across all containers."""
+
+    estimates: list[CostEstimate] = field(default_factory=list)
+    total_current_cost: float = 0.0
+    total_optimized_cost: float = 0.0
+    total_savings: float = 0.0
+    provider: str = ""
+    monthly_hours: float = 730.0
+
+
+@dataclass(frozen=True, slots=True)
+class StartupProfile:
+    """Startup timing for a container."""
+
+    container_name: str
+    image: str
+    create_to_running_ms: float
+    running_to_healthy_ms: float
+    total_startup_ms: float
+    image_size_mb: float
+    has_healthcheck: bool
