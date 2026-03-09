@@ -1,0 +1,15 @@
+services:
+  dockpulse:
+    build: .
+    container_name: dockpulse
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - dockpulse-data:/home/dockpulse/.dockpulse
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    command: ["dashboard"]
+    tty: true
+    stdin_open: true
+
+volumes:
+  dockpulse-data:

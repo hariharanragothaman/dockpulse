@@ -1,0 +1,80 @@
+# Sample multi-service stack for testing DockPulse.
+#
+# Start this stack, then run:
+#   dockpulse profile --duration 5m
+#   dockpulse waste
+#   dockpulse right-size examples/sample-compose.yml -o examples/sample-compose.optimized.yml
+
+services:
+  web:
+    image: nginx:alpine
+    container_name: web
+    ports:
+      - "8080:80"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+        reservations:
+          memory: 128M
+    depends_on:
+      - api
+
+  api:
+    image: python:3.12-slim
+    container_name: api
+    command: >
+      python -c "
+      import http.server, time, threading
+      def work():
+          while True:
+              _ = sum(range(100_000))
+              time.sleep(0.5)
+      threading.Thread(target=work, daemon=True).start()
+      http.server.HTTPServer(('', 8000), http.server.SimpleHTTPRequestHandler).serve_forever()
+      "
+    ports:
+      - "8000:8000"
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+          cpus: "2.0"
+        reservations:
+          memory: 256M
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: postgres:16-alpine
+    container_name: db
+    environment:
+      POSTGRES_USER: dockpulse
+      POSTGRES_PASSWORD: dockpulse
+      POSTGRES_DB: app
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    deploy:
+      resources:
+        limits:
+          memory: 2048M
+          cpus: "2.0"
+        reservations:
+          memory: 512M
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
+        reservations:
+          memory: 64M
+
+volumes:
+  pgdata:
