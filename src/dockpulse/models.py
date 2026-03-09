@@ -82,3 +82,53 @@ class WasteReport:
         if self.total_memory_allocated_mb == 0:
             return 0.0
         return (self.total_memory_waste_mb / self.total_memory_allocated_mb) * 100.0
+
+
+@dataclass(frozen=True, slots=True)
+class ProfileSession:
+    """Metadata for a profiling session."""
+
+    session_id: str
+    started_at: datetime
+    ended_at: datetime | None
+    duration_seconds: int
+    interval_seconds: float
+    container_count: int
+    sample_count: int
+    status: str  # "running", "completed", "interrupted"
+
+
+@dataclass(slots=True)
+class ServiceDependency:
+    """A dependency relationship between two Compose services."""
+
+    source: str
+    target: str
+    dependency_type: str  # "depends_on", "network", "volume", "link"
+
+
+@dataclass(slots=True)
+class StackAnalysis:
+    """Analysis result for an entire multi-container stack."""
+
+    profiles: list[ProfileResult]
+    dependencies: list[ServiceDependency]
+    bottleneck: str
+    bottleneck_reason: str
+    total_cpu_usage: float
+    total_memory_usage_mb: float
+    service_rankings: list[tuple[str, float]]  # (name, resource_pressure_score)
+    recommendations: list[str]
+
+
+@dataclass(frozen=True, slots=True)
+class HistoricalComparison:
+    """Comparison between two profiling sessions."""
+
+    session_a_id: str
+    session_b_id: str
+    container_name: str
+    cpu_p95_delta: float
+    memory_p95_delta_mb: float
+    cpu_trend: str  # "increasing", "decreasing", "stable"
+    memory_trend: str  # "increasing", "decreasing", "stable"
