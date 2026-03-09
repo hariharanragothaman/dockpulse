@@ -35,8 +35,9 @@ jobs:
 
       - name: Determine version bump
         id: bump
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
         run: |
-          COMMIT_MSG="${{ github.event.head_commit.message }}"
           CURRENT=$(python -c "
           import re
           with open('pyproject.toml') as f:
