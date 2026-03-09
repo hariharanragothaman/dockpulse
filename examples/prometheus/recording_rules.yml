@@ -1,0 +1,122 @@
+groups:
+  - name: dockpulse_aggregations
+    interval: 30s
+    rules:
+      # Pre-computed average CPU across all containers
+      - record: dockpulse:cpu_avg_percent
+        expr: avg(dockpulse_container_cpu_percent)
+
+      # Per-container 5-minute average CPU
+      - record: dockpulse:container_cpu_avg_5m
+        expr: avg_over_time(dockpulse_container_cpu_percent[5m])
+
+      # Per-container 5-minute p95 CPU (approximated via quantile_over_time)
+      - record: dockpulse:container_cpu_p95_5m
+        expr: quantile_over_time(0.95, dockpulse_container_cpu_percent[5m])
+
+      # Per-container 5-minute average memory usage
+      - record: dockpulse:container_memory_avg_5m
+        expr: avg_over_time(dockpulse_container_memory_usage_bytes[5m])
+
+      # Per-container memory utilization ratio (usage / limit)
+      - record: dockpulse:container_memory_utilization_ratio
+        expr: >
+          dockpulse_container_memory_usage_bytes
+          / dockpulse_container_memory_limit_bytes > 0
+
+      # Total network throughput per container (rx + tx)
+      - record: dockpulse:container_network_total_bytes
+        expr: >
+          dockpulse_container_network_rx_bytes
+          + dockpulse_container_network_tx_bytes
+
+      # Total block I/O per container (read + write)
+      - record: dockpulse:container_block_total_bytes
+        expr: >
+          dockpulse_container_block_read_bytes
+          + dockpulse_container_block_write_bytes
+
+      # Fleet-wide memory utilization (sum usage / sum limit)
+      - record: dockpulse:fleet_memory_utilization_ratio
+        expr: >
+          sum(dockpulse_container_memory_usage_bytes)
+          / sum(dockpulse_container_memory_limit_bytes) > 0
+
+  - name: dockpulse_alerts
+    rules:
+      - alert: DockPulseHighCPU
+        expr: dockpulse_container_cpu_percent > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on {{ $labels.container }}"
+          description: >
+            Container {{ $labels.container }} CPU at {{ $value | printf "%.1f" }}%
+            for more than 5 minutes.
+
+      - alert: DockPulseCriticalCPU
+        expr: dockpulse_container_cpu_percent > 95
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical CPU usage on {{ $labels.container }}"
+          description: >
+            Container {{ $labels.container }} CPU at {{ $value | printf "%.1f" }}%
+            for more than 2 minutes.
+
+      - alert: DockPulseHighMemory
+        expr: dockpulse_container_memory_percent > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.container }}"
+          description: >
+            Container {{ $labels.container }} memory at {{ $value | printf "%.1f" }}%
+            of limit for more than 5 minutes.
+
+      - alert: DockPulseCriticalMemory
+        expr: dockpulse_container_memory_percent > 95
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical memory usage on {{ $labels.container }}"
+          description: >
+            Container {{ $labels.container }} memory at {{ $value | printf "%.1f" }}%
+            of limit for more than 2 minutes. OOM kill risk.
+
+      - alert: DockPulseMemoryWaste
+        expr: >
+          (dockpulse_container_memory_limit_bytes - dockpulse_container_memory_usage_bytes)
+          / dockpulse_container_memory_limit_bytes > 0.8
+        for: 30m
+        labels:
+          severity: info
+        annotations:
+          summary: "Memory waste detected on {{ $labels.container }}"
+          description: >
+            Container {{ $labels.container }} is using less than 20% of its
+            memory limit. Consider right-sizing.
+
+      - alert: DockPulseHighPIDs
+        expr: dockpulse_container_pids > 500
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High process count on {{ $labels.container }}"
+          description: >
+            Container {{ $labels.container }} has {{ $value }} processes,
+            which may indicate a process leak.
+
+      - alert: DockPulseContainerDown
+        expr: up{job="dockpulse"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "DockPulse exporter is down"
+          description: "The DockPulse Prometheus exporter is not responding."

@@ -268,9 +268,9 @@ Container   Image          Create→Running   Running→Healthy   Total      Ima
 nginx       nginx:latest   142ms            —                 142ms      187.8 MB     ✗
 ```
 
-### Grafana Dashboard
+### Grafana Dashboards
 
-DockPulse ships with a pre-built Grafana dashboard. To use it with the bundled Prometheus setup:
+DockPulse ships with three pre-built Grafana dashboards and Prometheus recording/alerting rules. To use them with the bundled Prometheus setup:
 
 ```bash
 cd examples/prometheus
@@ -278,16 +278,53 @@ docker compose up -d
 dockpulse export --port 9090   # start the Prometheus exporter
 
 # Open Grafana at http://localhost:3000 (admin/admin)
-# The "DockPulse - Container Resource Overview" dashboard is auto-provisioned
+# All three dashboards are auto-provisioned
 ```
 
-The dashboard includes:
+To point Prometheus at a custom exporter address, set the environment variable before starting:
+
+```bash
+DOCKPULSE_EXPORTER_TARGET=my-host:9090 docker compose up -d
+```
+
+**Container Resource Overview** (`dockpulse-overview`)
 - **Overview row** -- stat panels for total containers, avg CPU%, avg memory%, total network I/O
 - **CPU row** -- time series of CPU usage per container with threshold lines
 - **Memory row** -- time series of memory usage vs limits, plus memory utilization gauges
 - **Network & Disk I/O row** -- time series of RX/TX bytes and block read/write
 - **Processes row** -- time series of PID counts per container
-- **Template variable** -- `$container` dropdown to filter by specific containers
+
+**Alerts & Thresholds** (`dockpulse-alerts`)
+- **Active alerts list** -- shows currently firing DockPulse alerts
+- **CPU/Memory warning counters** -- stat panels showing how many containers exceed thresholds
+- **CPU & Memory with threshold overlays** -- time series with 80%/95% warning/critical lines
+- **5-minute rolling aggregates** -- CPU p95 and memory averages from Prometheus recording rules
+
+**Right-Sizing & Waste Analysis** (`dockpulse-rightsizing`)
+- **Fleet utilization gauge** -- overall memory utilization across all containers
+- **Waste metrics** -- estimated memory waste in bytes and as a percentage
+- **Per-container bar gauges** -- memory and CPU utilization with waste-detection coloring
+- **Waste over time** -- stacked time series showing the gap between limits and actual usage
+- **Usage vs Limits** -- side-by-side comparison of actual usage against configured limits
+
+All dashboards support the `$container` template variable for filtering and link to each other for easy navigation.
+
+### Prometheus Recording & Alerting Rules
+
+The bundled `recording_rules.yml` provides pre-computed aggregates and alert definitions:
+
+**Recording rules** -- 5-minute rolling CPU/memory averages and p95s, fleet-wide utilization ratios, per-container network and disk I/O totals.
+
+**Alerting rules:**
+| Alert | Condition | Severity |
+|-------|-----------|----------|
+| `DockPulseHighCPU` | CPU > 80% for 5m | warning |
+| `DockPulseCriticalCPU` | CPU > 95% for 2m | critical |
+| `DockPulseHighMemory` | Memory > 85% for 5m | warning |
+| `DockPulseCriticalMemory` | Memory > 95% for 2m | critical |
+| `DockPulseMemoryWaste` | <20% memory used for 30m | info |
+| `DockPulseHighPIDs` | PIDs > 500 for 5m | warning |
+| `DockPulseContainerDown` | Exporter unreachable for 1m | critical |
 
 ## Architecture
 
@@ -441,6 +478,8 @@ The right-sizing engine applies a configurable headroom percentage on top of obs
 - [ ] Slack / Discord alert integration
 - [x] Cost estimation (map waste to cloud provider pricing)
 - [x] Grafana dashboard templates
+- [x] Grafana alerting rules and right-sizing dashboards
+- [x] Prometheus recording rules and configurable scrape targets
 - [x] Container startup time profiling
 - [x] PyPI package publishing with auto-versioning
 
