@@ -22,8 +22,8 @@
 </p>
 
 <p align="center">
-  <a href="https://hub.docker.com/r/hariharanragothaman/dockpulse"><img src="https://img.shields.io/docker/pulls/hariharanragothaman/dockpulse?style=flat-square&logo=docker&logoColor=white" alt="Docker Pulls"></a>
-  <a href="https://hub.docker.com/r/hariharanragothaman/dockpulse"><img src="https://img.shields.io/docker/image-size/hariharanragothaman/dockpulse?style=flat-square&logo=docker&logoColor=white&label=image%20size" alt="Docker Image Size"></a>
+  <a href="https://hub.docker.com/r/hariharanragothaman/dockpulse"><img src="https://img.shields.io/docker/pulls/hariharanragothaman/dockpulse?style=flat-square" alt="Docker Pulls"></a>
+  <a href="https://hub.docker.com/r/hariharanragothaman/dockpulse"><img src="https://img.shields.io/docker/image-size/hariharanragothaman/dockpulse?style=flat-square&label=image%20size" alt="Docker Image Size"></a>
 </p>
 
 <!-- TODO: Uncomment once published to PyPI
