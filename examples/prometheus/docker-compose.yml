@@ -5,9 +5,12 @@ services:
       - "9091:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./recording_rules.yml:/etc/prometheus/recording_rules.yml:ro
       - prometheus-data:/prometheus
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    environment:
+      DOCKPULSE_EXPORTER_TARGET: "${DOCKPULSE_EXPORTER_TARGET:-host.docker.internal:9090}"
     restart: unless-stopped
 
   grafana:

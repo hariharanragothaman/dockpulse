@@ -1,0 +1,469 @@
+{
+  "id": null,
+  "uid": "dockpulse-rightsizing",
+  "title": "DockPulse - Right-Sizing & Waste Analysis",
+  "tags": ["dockpulse", "rightsizing", "waste", "cost"],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "timepicker": {
+    "refresh_intervals": ["10s", "30s", "1m", "5m", "15m"]
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "container",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "dockpulse-prometheus" },
+        "query": "label_values(dockpulse_container_cpu_percent, container)",
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true,
+        "current": { "selected": true, "text": "All", "value": "$__all" },
+        "sort": 1
+      }
+    ]
+  },
+  "annotations": { "list": [] },
+  "links": [
+    {
+      "title": "Overview Dashboard",
+      "url": "/d/dockpulse-overview",
+      "icon": "dashboard",
+      "type": "link"
+    },
+    {
+      "title": "Alerts Dashboard",
+      "url": "/d/dockpulse-alerts",
+      "icon": "dashboard",
+      "type": "link"
+    }
+  ],
+  "panels": [
+    {
+      "type": "row",
+      "title": "Resource Utilization Summary",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+    {
+      "type": "gauge",
+      "title": "Fleet Memory Utilization",
+      "description": "Total memory used vs total memory allocated across all containers",
+      "gridPos": { "x": 0, "y": 1, "w": 8, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "dockpulse-prometheus" },
+      "targets": [{
+        "expr": "sum(dockpulse_container_memory_usage_bytes{container=~\"$container\"}) / sum(dockpulse_container_memory_limit_bytes{container=~\"$container\"}) * 100",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "red" },
+              { "value": 20, "color": "orange" },
+              { "value": 50, "color": "green" },
+              { "value": 85, "color": "yellow" },
+              { "value": 95, "color": "red" }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "showThresholdLabels": true,
+        "showThresholdMarkers": true
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Total Memory Allocated",
+      "gridPos": { "x": 8, "y": 1, "w": 4, "h": 3 },
+      "datasource": { "type": "prometheus", "uid": "dockpulse-prometheus" },
+      "targets": [{
+        "expr": "sum(dockpulse_container_memory_limit_bytes{container=~\"$container\"})",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "value": null, "color": "blue" }]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Total Memory Used",
+      "gridPos": { "x": 12, "y": 1, "w": 4, "h": 3 },
+      "datasource": { "type": "prometheus", "uid": "dockpulse-prometheus" },
+      "targets": [{
+        "expr": "sum(dockpulse_container_memory_usage_bytes{container=~\"$container\"})",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "value": null, "color": "green" }]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Estimated Memory Waste",
+      "gridPos": { "x": 16, "y": 1, "w": 4, "h": 3 },
+      "datasource": { "type": "prometheus", "uid": "dockpulse-prometheus" },
+      "targets": [{
+        "expr": "sum(dockpulse_container_memory_limit_bytes{container=~\"$container\"}) - sum(dockpulse_container_memory_usage_bytes{container=~\"$container\"})",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "green" },
+              { "value": 536870912, "color": "yellow" },
+              { "value": 1073741824, "color": "orange" },
+              { "value": 2147483648, "color": "red" }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "value",
+        "graphMode": "area"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Waste Percentage",
+      "gridPos": { "x": 20, "y": 1, "w": 4, "h": 3 },
+      "datasource": { "type": "prometheus", "uid": "dockpulse-prometheus" },
+      "targets": [{
+        "expr": "(1 - sum(dockpulse_container_memory_usage_bytes{container=~\"$container\"}) / sum(dockpulse_container_memory_limit_bytes{container=~\"$container\"})) * 100",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "green" },
+              { "value": 50, "color": "yellow" },
+              { "value": 70, "color": "orange" },
+              { "value": 80, "color": "red" }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "none"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Avg Fleet CPU",
+      "gridPos": { "x": 8, "y": 4, "w": 4, "h": 3 },
+      "datasource": { "type": "prometheus", "uid": "dockpulse-prometheus" },
+      "targets": [{
+        "expr": "avg(dockpulse_container_cpu_percent{container=~\"$container\"})",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "green" },
+              { "value": 50, "color": "yellow" },
+              { "value": 80, "color": "red" }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "value",
+        "graphMode": "area"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Max CPU (any container)",
+      "gridPos": { "x": 12, "y": 4, "w": 4, "h": 3 },
+      "datasource": { "type": "prometheus", "uid": "dockpulse-prometheus" },
+      "targets": [{
+        "expr": "max(dockpulse_container_cpu_percent{container=~\"$container\"})",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "green" },
+              { "value": 60, "color": "yellow" },
+              { "value": 80, "color": "red" }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Container Count",
+      "gridPos": { "x": 16, "y": 4, "w": 4, "h": 3 },
+      "datasource": { "type": "prometheus", "uid": "dockpulse-prometheus" },
+      "targets": [{
+        "expr": "dockpulse_containers_total",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "value": null, "color": "blue" }]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Total Network I/O",
+      "gridPos": { "x": 20, "y": 4, "w": 4, "h": 3 },
+      "datasource": { "type": "prometheus", "uid": "dockpulse-prometheus" },
+      "targets": [{
+        "expr": "sum(dockpulse_container_network_rx_bytes{container=~\"$container\"} + dockpulse_container_network_tx_bytes{container=~\"$container\"})",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "value": null, "color": "blue" }]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "value",
+        "graphMode": "area"
+      }
+    },
+    {
+      "type": "row",
+      "title": "Per-Container Utilization",
+      "gridPos": { "x": 0, "y": 7, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+    {
+      "type": "bargauge",
+      "title": "Memory Utilization Per Container",
+      "description": "Memory usage as a percentage of limit — bars below 20% indicate waste",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "dockpulse-prometheus" },
+      "targets": [{
+        "expr": "dockpulse_container_memory_percent{container=~\"$container\"}",
+        "legendFormat": "{{ container }}",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "red" },
+              { "value": 15, "color": "orange" },
+              { "value": 40, "color": "green" },
+              { "value": 85, "color": "yellow" },
+              { "value": 95, "color": "red" }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true
+      }
+    },
+    {
+      "type": "bargauge",
+      "title": "CPU Usage Per Container",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "dockpulse-prometheus" },
+      "targets": [{
+        "expr": "dockpulse_container_cpu_percent{container=~\"$container\"}",
+        "legendFormat": "{{ container }}",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "green" },
+              { "value": 50, "color": "yellow" },
+              { "value": 80, "color": "red" }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true
+      }
+    },
+    {
+      "type": "row",
+      "title": "Waste Over Time",
+      "gridPos": { "x": 0, "y": 16, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+    {
+      "type": "timeseries",
+      "title": "Memory Waste Per Container (Limit - Usage)",
+      "description": "Gap between allocated memory and actual usage over time",
+      "gridPos": { "x": 0, "y": 17, "w": 24, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "dockpulse-prometheus" },
+      "targets": [{
+        "expr": "dockpulse_container_memory_limit_bytes{container=~\"$container\"} - dockpulse_container_memory_usage_bytes{container=~\"$container\"}",
+        "legendFormat": "{{ container }} wasted",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "min": 0,
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 25,
+            "gradientMode": "opacity",
+            "showPoints": "never",
+            "stacking": { "mode": "normal" }
+          },
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max", "lastNotNull"] }
+      }
+    },
+    {
+      "type": "row",
+      "title": "Usage vs Limits Comparison",
+      "gridPos": { "x": 0, "y": 25, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+    {
+      "type": "timeseries",
+      "title": "Memory: Usage vs Limit (All Containers)",
+      "gridPos": { "x": 0, "y": 26, "w": 24, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "dockpulse-prometheus" },
+      "targets": [
+        {
+          "expr": "dockpulse_container_memory_usage_bytes{container=~\"$container\"}",
+          "legendFormat": "{{ container }} usage",
+          "refId": "A"
+        },
+        {
+          "expr": "dockpulse_container_memory_limit_bytes{container=~\"$container\"}",
+          "legendFormat": "{{ container }} limit",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "min": 0,
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byRegexp", "options": ".*limit.*" },
+            "properties": [
+              { "id": "custom.lineStyle", "value": { "fill": "dash", "dash": [10, 10] } },
+              { "id": "custom.fillOpacity", "value": 0 },
+              { "id": "custom.lineWidth", "value": 1 }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max"] }
+      }
+    }
+  ]
+}

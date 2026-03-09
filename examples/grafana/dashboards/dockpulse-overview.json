@@ -31,6 +31,18 @@
   "annotations": { "list": [] },
   "links": [
     {
+      "title": "Alerts Dashboard",
+      "url": "/d/dockpulse-alerts",
+      "icon": "dashboard",
+      "type": "link"
+    },
+    {
+      "title": "Right-Sizing Dashboard",
+      "url": "/d/dockpulse-rightsizing",
+      "icon": "dashboard",
+      "type": "link"
+    },
+    {
       "title": "DockPulse GitHub",
       "url": "https://github.com/hariharanragothaman/dockpulse",
       "icon": "external link",

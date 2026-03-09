@@ -1,0 +1,377 @@
+{
+  "id": null,
+  "uid": "dockpulse-alerts",
+  "title": "DockPulse - Alerts & Thresholds",
+  "tags": ["dockpulse", "alerts", "monitoring"],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {
+    "refresh_intervals": ["5s", "10s", "30s", "1m", "5m"]
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "container",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "dockpulse-prometheus" },
+        "query": "label_values(dockpulse_container_cpu_percent, container)",
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true,
+        "current": { "selected": true, "text": "All", "value": "$__all" },
+        "sort": 1
+      }
+    ]
+  },
+  "annotations": {
+    "list": [
+      {
+        "datasource": { "type": "prometheus", "uid": "dockpulse-prometheus" },
+        "enable": true,
+        "expr": "ALERTS{alertname=~\"DockPulse.*\", alertstate=\"firing\"}",
+        "name": "DockPulse Alerts",
+        "iconColor": "red",
+        "titleFormat": "{{ alertname }}",
+        "textFormat": "{{ container }}: {{ description }}"
+      }
+    ]
+  },
+  "links": [
+    {
+      "title": "Overview Dashboard",
+      "url": "/d/dockpulse-overview",
+      "icon": "dashboard",
+      "type": "link"
+    },
+    {
+      "title": "Right-Sizing Dashboard",
+      "url": "/d/dockpulse-rightsizing",
+      "icon": "dashboard",
+      "type": "link"
+    }
+  ],
+  "panels": [
+    {
+      "type": "row",
+      "title": "Alert Status",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+    {
+      "type": "alertlist",
+      "title": "Active Alerts",
+      "gridPos": { "x": 0, "y": 1, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "dockpulse-prometheus" },
+      "options": {
+        "showOptions": "current",
+        "maxItems": 20,
+        "sortOrder": 1,
+        "alertName": "DockPulse",
+        "stateFilter": {
+          "firing": true,
+          "pending": true,
+          "noData": false,
+          "normal": false
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Containers Above CPU Warning (80%)",
+      "gridPos": { "x": 12, "y": 1, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "dockpulse-prometheus" },
+      "targets": [{
+        "expr": "count(dockpulse_container_cpu_percent > 80) or vector(0)",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "green" },
+              { "value": 1, "color": "yellow" },
+              { "value": 3, "color": "red" }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Containers Above Mem Warning (85%)",
+      "gridPos": { "x": 18, "y": 1, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "dockpulse-prometheus" },
+      "targets": [{
+        "expr": "count(dockpulse_container_memory_percent > 85) or vector(0)",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "green" },
+              { "value": 1, "color": "yellow" },
+              { "value": 3, "color": "red" }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Containers Wasting Memory (>80% unused)",
+      "gridPos": { "x": 12, "y": 5, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "dockpulse-prometheus" },
+      "targets": [{
+        "expr": "count((dockpulse_container_memory_limit_bytes - dockpulse_container_memory_usage_bytes) / dockpulse_container_memory_limit_bytes > 0.8) or vector(0)",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "green" },
+              { "value": 1, "color": "orange" },
+              { "value": 5, "color": "red" }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "High PID Containers (>500)",
+      "gridPos": { "x": 18, "y": 5, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "dockpulse-prometheus" },
+      "targets": [{
+        "expr": "count(dockpulse_container_pids > 500) or vector(0)",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "green" },
+              { "value": 1, "color": "yellow" },
+              { "value": 3, "color": "red" }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto"
+      }
+    },
+    {
+      "type": "row",
+      "title": "CPU Threshold Monitoring",
+      "gridPos": { "x": 0, "y": 9, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+    {
+      "type": "timeseries",
+      "title": "CPU Usage with Alert Thresholds",
+      "gridPos": { "x": 0, "y": 10, "w": 24, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "dockpulse-prometheus" },
+      "targets": [{
+        "expr": "dockpulse_container_cpu_percent{container=~\"$container\"}",
+        "legendFormat": "{{ container }}",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "thresholdsStyle": { "mode": "line+area" }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "green" },
+              { "value": 80, "color": "yellow" },
+              { "value": 95, "color": "red" }
+            ]
+          }
+        }
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max", "lastNotNull"] }
+      }
+    },
+    {
+      "type": "row",
+      "title": "Memory Threshold Monitoring",
+      "gridPos": { "x": 0, "y": 18, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+    {
+      "type": "timeseries",
+      "title": "Memory Usage % with Alert Thresholds",
+      "gridPos": { "x": 0, "y": 19, "w": 24, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "dockpulse-prometheus" },
+      "targets": [{
+        "expr": "dockpulse_container_memory_percent{container=~\"$container\"}",
+        "legendFormat": "{{ container }}",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "thresholdsStyle": { "mode": "line+area" }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "green" },
+              { "value": 85, "color": "yellow" },
+              { "value": 95, "color": "red" }
+            ]
+          }
+        }
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max", "lastNotNull"] }
+      }
+    },
+    {
+      "type": "row",
+      "title": "5-Minute Aggregates (Recording Rules)",
+      "gridPos": { "x": 0, "y": 27, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+    {
+      "type": "timeseries",
+      "title": "CPU p95 (5m rolling)",
+      "gridPos": { "x": 0, "y": 28, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "dockpulse-prometheus" },
+      "targets": [{
+        "expr": "dockpulse:container_cpu_p95_5m{container=~\"$container\"}",
+        "legendFormat": "{{ container }} p95",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "gradientMode": "scheme",
+            "showPoints": "never"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "green" },
+              { "value": 80, "color": "red" }
+            ]
+          }
+        }
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max"] }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Memory Average (5m rolling)",
+      "gridPos": { "x": 12, "y": 28, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "dockpulse-prometheus" },
+      "targets": [
+        {
+          "expr": "dockpulse:container_memory_avg_5m{container=~\"$container\"}",
+          "legendFormat": "{{ container }} avg",
+          "refId": "A"
+        },
+        {
+          "expr": "dockpulse_container_memory_limit_bytes{container=~\"$container\"}",
+          "legendFormat": "{{ container }} limit",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "min": 0,
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byRegexp", "options": ".*limit.*" },
+            "properties": [
+              { "id": "custom.lineStyle", "value": { "fill": "dash", "dash": [10, 10] } },
+              { "id": "custom.fillOpacity", "value": 0 }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max"] }
+      }
+    }
+  ]
+}
