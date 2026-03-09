@@ -61,7 +61,7 @@ class TestEscapeLabel:
 
 class TestFormatGauge:
     def test_basic_gauge(self) -> None:
-        output = _format_gauge("test_metric", "A test", [('', 42.0)])
+        output = _format_gauge("test_metric", "A test", [("", 42.0)])
         assert "# HELP test_metric A test" in output
         assert "# TYPE test_metric gauge" in output
         assert "test_metric 42.0" in output
@@ -146,9 +146,7 @@ class TestCollectMetrics:
 
     def test_special_characters_in_name(self) -> None:
         mock_collector = MagicMock()
-        mock_collector.collect_all.return_value = [
-            _make_stats(name='my"container')
-        ]
+        mock_collector.collect_all.return_value = [_make_stats(name='my"container')]
 
         exporter = PrometheusExporter(port=0, collector=mock_collector)
         output = exporter._collect_metrics()
