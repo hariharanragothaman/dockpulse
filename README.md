@@ -9,10 +9,9 @@
 </p>
 
 <p align="center">
-  <a href="https://pypi.org/project/dockpulse/"><img src="https://img.shields.io/pypi/v/dockpulse?style=flat-square&logo=pypi&logoColor=white&color=3775A9" alt="PyPI Version"></a>
-  <a href="https://pypi.org/project/dockpulse/"><img src="https://img.shields.io/pypi/pyversions/dockpulse?style=flat-square&logo=python&logoColor=white" alt="Python Versions"></a>
   <a href="https://github.com/hariharanragothaman/dockpulse/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/hariharanragothaman/dockpulse/ci.yml?branch=main&style=flat-square&logo=github&label=CI" alt="CI Status"></a>
   <a href="https://github.com/hariharanragothaman/dockpulse/blob/main/LICENSE"><img src="https://img.shields.io/github/license/hariharanragothaman/dockpulse?style=flat-square&color=blue" alt="License"></a>
+  <img src="https://img.shields.io/badge/python-3.10%20|%203.11%20|%203.12-blue?style=flat-square&logo=python&logoColor=white" alt="Python Versions">
 </p>
 
 <p align="center">
@@ -22,11 +21,14 @@
   <a href="https://github.com/hariharanragothaman/dockpulse/pulls"><img src="https://img.shields.io/github/issues-pr/hariharanragothaman/dockpulse?style=flat-square&logo=github" alt="Pull Requests"></a>
 </p>
 
+<!-- TODO: Uncomment these once published to PyPI and Docker Hub
 <p align="center">
+  <a href="https://pypi.org/project/dockpulse/"><img src="https://img.shields.io/pypi/v/dockpulse?style=flat-square&logo=pypi&logoColor=white&color=3775A9" alt="PyPI Version"></a>
   <a href="https://pypi.org/project/dockpulse/"><img src="https://img.shields.io/pypi/dm/dockpulse?style=flat-square&logo=pypi&logoColor=white&label=downloads" alt="PyPI Downloads"></a>
   <a href="https://hub.docker.com/r/hariharanragothaman/dockpulse"><img src="https://img.shields.io/docker/pulls/hariharanragothaman/dockpulse?style=flat-square&logo=docker&logoColor=white" alt="Docker Pulls"></a>
   <a href="https://hub.docker.com/r/hariharanragothaman/dockpulse"><img src="https://img.shields.io/docker/image-size/hariharanragothaman/dockpulse?style=flat-square&logo=docker&logoColor=white&label=image%20size" alt="Docker Image Size"></a>
 </p>
+-->
 
 <p align="center">
   <img src="https://img.shields.io/badge/docker-%232496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker">
