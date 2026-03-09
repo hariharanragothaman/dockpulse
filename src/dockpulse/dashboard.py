@@ -27,8 +27,7 @@ def _sparkline(values: list[float], width: int = 12) -> str:
     span = hi - lo if hi != lo else 1.0
 
     return "".join(
-        _SPARKLINE_CHARS[int((v - lo) / span * (len(_SPARKLINE_CHARS) - 1))]
-        for v in recent
+        _SPARKLINE_CHARS[int((v - lo) / span * (len(_SPARKLINE_CHARS) - 1))] for v in recent
     )
 
 
@@ -85,17 +84,9 @@ class Dashboard:
 
         for p in profiles:
             cpu_vals = [s.cpu_percent for s in p.samples]
-            mem_pct = (
-                (p.memory_p95_mb / p.memory_limit_mb * 100)
-                if p.memory_limit_mb > 0
-                else 0.0
-            )
+            mem_pct = (p.memory_p95_mb / p.memory_limit_mb * 100) if p.memory_limit_mb > 0 else 0.0
             last = p.samples[-1] if p.samples else None
-            net_io = (
-                f"↓{last.network_rx_mb:.1f} ↑{last.network_tx_mb:.1f}"
-                if last
-                else "-"
-            )
+            net_io = f"↓{last.network_rx_mb:.1f} ↑{last.network_tx_mb:.1f}" if last else "-"
 
             table.add_row(
                 p.name,
@@ -161,7 +152,10 @@ class Dashboard:
         summary.add_row("Total memory used (p95):", f"{report.total_memory_used_p95_mb:.0f} MB")
         summary.add_row(
             "Total memory waste:",
-            Text(f"{report.total_memory_waste_mb:.0f} MB ({report.waste_percentage:.1f}%)", style="bold red"),
+            Text(
+                f"{report.total_memory_waste_mb:.0f} MB ({report.waste_percentage:.1f}%)",
+                style="bold red",
+            ),
         )
 
         self._console.print(table)

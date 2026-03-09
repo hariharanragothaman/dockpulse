@@ -47,7 +47,7 @@ def _calculate_cpu_percent(stats: dict[str, Any]) -> float:
         return 0.0
 
     online_cpus = cpu.get("online_cpus") or len(cpu.get("cpu_usage", {}).get("percpu_usage", [1]))
-    return round((cpu_delta / system_delta) * online_cpus * 100.0, 2)
+    return float(round((cpu_delta / system_delta) * online_cpus * 100.0, 2))
 
 
 def _parse_network_io(stats: dict[str, Any]) -> tuple[float, float]:
@@ -60,9 +60,7 @@ def _parse_network_io(stats: dict[str, Any]) -> tuple[float, float]:
 
 def _parse_block_io(stats: dict[str, Any]) -> tuple[float, float]:
     """Extract read and write bytes from blkio stats."""
-    entries = (
-        stats.get("blkio_stats", {}).get("io_service_bytes_recursive") or []
-    )
+    entries = stats.get("blkio_stats", {}).get("io_service_bytes_recursive") or []
     read = sum(e.get("value", 0) for e in entries if e.get("op", "").lower() == "read")
     write = sum(e.get("value", 0) for e in entries if e.get("op", "").lower() == "write")
     return _bytes_to_mb(read), _bytes_to_mb(write)
@@ -404,15 +402,11 @@ class StatsCollector:
         conn = sqlite3.connect(db_path)
         conn.row_factory = sqlite3.Row
         try:
-            rows = conn.execute(
-                "SELECT * FROM sessions ORDER BY started_at DESC"
-            ).fetchall()
+            rows = conn.execute("SELECT * FROM sessions ORDER BY started_at DESC").fetchall()
 
             sessions: list[ProfileSession] = []
             for r in rows:
-                ended_at = (
-                    datetime.fromisoformat(r["ended_at"]) if r["ended_at"] else None
-                )
+                ended_at = datetime.fromisoformat(r["ended_at"]) if r["ended_at"] else None
                 sessions.append(
                     ProfileSession(
                         session_id=r["session_id"],
@@ -437,12 +431,8 @@ class StatsCollector:
         """
         conn = sqlite3.connect(db_path)
         try:
-            conn.execute(
-                "DELETE FROM samples WHERE session_id = ?", (session_id,)
-            )
-            deleted = conn.execute(
-                "DELETE FROM sessions WHERE session_id = ?", (session_id,)
-            )
+            conn.execute("DELETE FROM samples WHERE session_id = ?", (session_id,))
+            deleted = conn.execute("DELETE FROM sessions WHERE session_id = ?", (session_id,))
             conn.commit()
             return deleted.rowcount > 0
         finally:

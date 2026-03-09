@@ -116,8 +116,7 @@ class Analyzer:
             )
 
         is_low_memory = (
-            profile.memory_limit_mb > 0
-            and (profile.memory_p95_mb / profile.memory_limit_mb) < 0.10
+            profile.memory_limit_mb > 0 and (profile.memory_p95_mb / profile.memory_limit_mb) < 0.10
         )
         is_low_cpu = profile.cpu_p95 < 10.0
 
@@ -204,9 +203,7 @@ class Analyzer:
             bp = next(p for p in profiles if p.name == bottleneck_name)
             if bp.memory_limit_mb > 0:
                 mem_ratio = bp.memory_p95_mb / bp.memory_limit_mb
-                bottleneck_reason = (
-                    f"memory at {mem_ratio:.0%} of limit"
-                )
+                bottleneck_reason = f"memory at {mem_ratio:.0%} of limit"
             else:
                 bottleneck_reason = f"CPU p95 at {bp.cpu_p95:.1f}%"
 
@@ -214,7 +211,9 @@ class Analyzer:
         total_memory = sum(p.memory_p95_mb for p in profiles)
 
         recommendations = self._generate_stack_recommendations(
-            profiles, dependencies, service_rankings,
+            profiles,
+            dependencies,
+            service_rankings,
         )
 
         return StackAnalysis(
@@ -289,11 +288,15 @@ class Analyzer:
                 continue
 
             for target in self._extract_depends_on(svc_cfg):
-                deps.append(ServiceDependency(source=svc_name, target=target, dependency_type="depends_on"))
+                deps.append(
+                    ServiceDependency(source=svc_name, target=target, dependency_type="depends_on")
+                )
 
             for target in svc_cfg.get("links", []):
                 link_target = target.split(":")[0]
-                deps.append(ServiceDependency(source=svc_name, target=link_target, dependency_type="link"))
+                deps.append(
+                    ServiceDependency(source=svc_name, target=link_target, dependency_type="link")
+                )
 
         network_members: dict[str, list[str]] = {}
         for svc_name, svc_cfg in services.items():

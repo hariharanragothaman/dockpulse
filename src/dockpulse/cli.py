@@ -123,7 +123,9 @@ def _load_samples_for_session(db_path: str, session_id: str) -> list[ProfileResu
     query = "SELECT * FROM samples WHERE timestamp >= ? ORDER BY name, timestamp"
     params: list[str] = [started_at]
     if ended_at:
-        query = "SELECT * FROM samples WHERE timestamp >= ? AND timestamp <= ? ORDER BY name, timestamp"
+        query = (
+            "SELECT * FROM samples WHERE timestamp >= ? AND timestamp <= ? ORDER BY name, timestamp"
+        )
         params.append(ended_at)
 
     rows = conn.execute(query, params).fetchall()
@@ -209,8 +211,7 @@ def profile(
 
     if not quiet:
         console.print(
-            f"[bold cyan]Profiling for {duration}[/bold cyan] "
-            f"(interval={interval}s, db={db})"
+            f"[bold cyan]Profiling for {duration}[/bold cyan] (interval={interval}s, db={db})"
         )
 
     session_id = uuid.uuid4().hex
@@ -230,6 +231,7 @@ def profile(
     count = 0
 
     if quiet:
+
         def _on_sample(stat: object) -> None:
             nonlocal count
             count += 1
@@ -505,15 +507,17 @@ def report(
                     return "stable"
                 return "increasing" if delta > 0 else "decreasing"
 
-            comparisons.append(HistoricalComparison(
-                session_a_id=session_a,
-                session_b_id=session_b,
-                container_name=name,
-                cpu_p95_delta=cpu_delta,
-                memory_p95_delta_mb=mem_delta,
-                cpu_trend=_trend(cpu_delta, cpu_a),
-                memory_trend=_trend(mem_delta, mem_a),
-            ))
+            comparisons.append(
+                HistoricalComparison(
+                    session_a_id=session_a,
+                    session_b_id=session_b,
+                    container_name=name,
+                    cpu_p95_delta=cpu_delta,
+                    memory_p95_delta_mb=mem_delta,
+                    cpu_trend=_trend(cpu_delta, cpu_a),
+                    memory_trend=_trend(mem_delta, mem_a),
+                )
+            )
 
         viz.generate_comparison_report(comparisons, output)
         console.print(f"[green]Comparison report written to {output}[/green]")
@@ -549,7 +553,9 @@ def sessions() -> None:
     ).fetchone()
 
     if not table_check:
-        console.print("[yellow]No sessions table found.[/yellow] Re-run profiling to track sessions.")
+        console.print(
+            "[yellow]No sessions table found.[/yellow] Re-run profiling to track sessions."
+        )
         conn.close()
         raise typer.Exit(1)
 
@@ -689,7 +695,9 @@ def compare(
 
 @app.command()
 def stack(
-    compose_file: str = typer.Argument(None, help="Path to docker-compose.yml for dependency analysis"),
+    compose_file: str = typer.Argument(
+        None, help="Path to docker-compose.yml for dependency analysis"
+    ),
     fmt: str = typer.Option("rich", "--format", "-f", help="Output format: rich, json"),
 ) -> None:
     """Analyze a multi-container stack and identify bottlenecks.
@@ -715,18 +723,22 @@ def stack(
         for svc_name, svc_cfg in services.items():
             for dep in svc_cfg.get("depends_on", []):
                 dep_name = dep if isinstance(dep, str) else str(dep)
-                dependencies.append({
-                    "source": svc_name,
-                    "target": dep_name,
-                    "type": "depends_on",
-                })
+                dependencies.append(
+                    {
+                        "source": svc_name,
+                        "target": dep_name,
+                        "type": "depends_on",
+                    }
+                )
             if isinstance(svc_cfg.get("networks"), list):
                 for net in svc_cfg["networks"]:
-                    dependencies.append({
-                        "source": svc_name,
-                        "target": net,
-                        "type": "network",
-                    })
+                    dependencies.append(
+                        {
+                            "source": svc_name,
+                            "target": net,
+                            "type": "network",
+                        }
+                    )
 
     rankings: list[tuple[str, float]] = []
     for p in profiles:
@@ -745,11 +757,19 @@ def stack(
     recommendations: list[str] = []
     for p in profiles:
         if p.memory_limit_mb > 0 and (p.memory_p95_mb / p.memory_limit_mb) > 0.80:
-            recommendations.append(f"Increase memory limit for '{p.name}' (at {p.memory_p95_mb / p.memory_limit_mb:.0%} of limit)")
-        if p.memory_limit_mb > 0 and (p.memory_p95_mb / p.memory_limit_mb) < 0.10 and p.cpu_p95 < 10.0:
+            recommendations.append(
+                f"Increase memory limit for '{p.name}' (at {p.memory_p95_mb / p.memory_limit_mb:.0%} of limit)"
+            )
+        if (
+            p.memory_limit_mb > 0
+            and (p.memory_p95_mb / p.memory_limit_mb) < 0.10
+            and p.cpu_p95 < 10.0
+        ):
             recommendations.append(f"Reduce resources for '{p.name}' (under 10% utilization)")
         if p.peak_cpu > 200.0:
-            recommendations.append(f"Investigate CPU spikes in '{p.name}' (peak: {p.peak_cpu:.1f}%)")
+            recommendations.append(
+                f"Investigate CPU spikes in '{p.name}' (peak: {p.peak_cpu:.1f}%)"
+            )
 
     if not recommendations:
         recommendations.append("All services are within healthy resource bounds.")
@@ -783,14 +803,14 @@ def stack(
 
     profile_lookup = {p.name: p for p in profiles}
     for i, (name, score) in enumerate(rankings, 1):
-        p = profile_lookup.get(name)
+        pr = profile_lookup.get(name)
         score_style = "red" if score > 0.7 else ("yellow" if score > 0.4 else "green")
         rank_table.add_row(
             str(i),
             name,
             Text(f"{score:.3f}", style=score_style),
-            f"{p.cpu_p95:.1f}%" if p else "?",
-            f"{p.memory_p95_mb:.1f}" if p else "?",
+            f"{pr.cpu_p95:.1f}%" if pr else "?",
+            f"{pr.memory_p95_mb:.1f}" if pr else "?",
         )
 
     console.print(rank_table)
@@ -823,7 +843,9 @@ def stack(
 @app.command()
 def clean(
     all_sessions: bool = typer.Option(False, "--all", help="Delete all sessions and data"),
-    session_id: str | None = typer.Option(None, "--session", "-s", help="Delete a specific session"),
+    session_id: str | None = typer.Option(
+        None, "--session", "-s", help="Delete a specific session"
+    ),
 ) -> None:
     """Clean up profiling data from the local database."""
     db = str(_config.resolved_db_path)
@@ -879,7 +901,9 @@ def clean(
         console.print(f"[green]Session {full_id[:8]} and its samples deleted.[/green]")
         return
 
-    console.print("[yellow]Specify --all to delete everything or --session/-s to delete a specific session.[/yellow]")
+    console.print(
+        "[yellow]Specify --all to delete everything or --session/-s to delete a specific session.[/yellow]"
+    )
 
 
 @app.command(name="export")

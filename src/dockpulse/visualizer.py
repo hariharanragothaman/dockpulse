@@ -107,7 +107,7 @@ def _apply_layout(fig: go.Figure, **overrides: object) -> go.Figure:
 
 def _fig_to_div(fig: go.Figure) -> str:
     """Render a Plotly figure as an embeddable ``<div>``."""
-    return fig.to_html(full_html=False, include_plotlyjs=False)
+    return str(fig.to_html(full_html=False, include_plotlyjs=False))
 
 
 def _wrap_html(title: str, subtitle: str, body: str) -> str:
@@ -264,14 +264,16 @@ class Visualizer:
             color = _CHART_COLORS[idx % len(_CHART_COLORS)]
             timestamps = [s.timestamp for s in p.samples]
             cpus = [s.cpu_percent for s in p.samples]
-            fig.add_trace(go.Scatter(
-                x=timestamps,
-                y=cpus,
-                mode="lines",
-                name=p.name,
-                line=dict(color=color, width=2),
-                hovertemplate="%{y:.1f}%<extra>%{fullData.name}</extra>",
-            ))
+            fig.add_trace(
+                go.Scatter(
+                    x=timestamps,
+                    y=cpus,
+                    mode="lines",
+                    name=p.name,
+                    line=dict(color=color, width=2),
+                    hovertemplate="%{y:.1f}%<extra>%{fullData.name}</extra>",
+                )
+            )
             fig.add_hline(
                 y=p.cpu_p95,
                 line_dash="dash",
@@ -296,14 +298,16 @@ class Visualizer:
             color = _CHART_COLORS[idx % len(_CHART_COLORS)]
             timestamps = [s.timestamp for s in p.samples]
             mems = [s.memory_usage_mb for s in p.samples]
-            fig.add_trace(go.Scatter(
-                x=timestamps,
-                y=mems,
-                mode="lines",
-                name=p.name,
-                line=dict(color=color, width=2),
-                hovertemplate="%{y:.1f} MB<extra>%{fullData.name}</extra>",
-            ))
+            fig.add_trace(
+                go.Scatter(
+                    x=timestamps,
+                    y=mems,
+                    mode="lines",
+                    name=p.name,
+                    line=dict(color=color, width=2),
+                    hovertemplate="%{y:.1f} MB<extra>%{fullData.name}</extra>",
+                )
+            )
             if p.memory_limit_mb > 0:
                 fig.add_hline(
                     y=p.memory_limit_mb,
@@ -331,32 +335,61 @@ class Visualizer:
         actual_cpu = [p.cpu_p95 for p in profiles]
 
         fig = make_subplots(
-            rows=1, cols=2,
+            rows=1,
+            cols=2,
             subplot_titles=("Memory (MB)", "CPU (%)"),
             horizontal_spacing=0.15,
         )
 
-        fig.add_trace(go.Bar(
-            x=names, y=allocated_mem, name="Allocated",
-            marker_color=_MUTED, opacity=0.6,
-            hovertemplate="%{y:.0f} MB<extra>Allocated</extra>",
-        ), row=1, col=1)
-        fig.add_trace(go.Bar(
-            x=names, y=actual_mem, name="Actual (p95)",
-            marker_color=_PRIMARY,
-            hovertemplate="%{y:.1f} MB<extra>Actual p95</extra>",
-        ), row=1, col=1)
+        fig.add_trace(
+            go.Bar(
+                x=names,
+                y=allocated_mem,
+                name="Allocated",
+                marker_color=_MUTED,
+                opacity=0.6,
+                hovertemplate="%{y:.0f} MB<extra>Allocated</extra>",
+            ),
+            row=1,
+            col=1,
+        )
+        fig.add_trace(
+            go.Bar(
+                x=names,
+                y=actual_mem,
+                name="Actual (p95)",
+                marker_color=_PRIMARY,
+                hovertemplate="%{y:.1f} MB<extra>Actual p95</extra>",
+            ),
+            row=1,
+            col=1,
+        )
 
-        fig.add_trace(go.Bar(
-            x=names, y=allocated_cpu, name="Peak",
-            marker_color=_MUTED, opacity=0.6, showlegend=False,
-            hovertemplate="%{y:.1f}%<extra>Peak</extra>",
-        ), row=1, col=2)
-        fig.add_trace(go.Bar(
-            x=names, y=actual_cpu, name="p95",
-            marker_color=_SUCCESS, showlegend=False,
-            hovertemplate="%{y:.1f}%<extra>p95</extra>",
-        ), row=1, col=2)
+        fig.add_trace(
+            go.Bar(
+                x=names,
+                y=allocated_cpu,
+                name="Peak",
+                marker_color=_MUTED,
+                opacity=0.6,
+                showlegend=False,
+                hovertemplate="%{y:.1f}%<extra>Peak</extra>",
+            ),
+            row=1,
+            col=2,
+        )
+        fig.add_trace(
+            go.Bar(
+                x=names,
+                y=actual_cpu,
+                name="p95",
+                marker_color=_SUCCESS,
+                showlegend=False,
+                hovertemplate="%{y:.1f}%<extra>p95</extra>",
+            ),
+            row=1,
+            col=2,
+        )
 
         _apply_layout(
             fig,
@@ -381,18 +414,20 @@ class Visualizer:
             labels = ["No waste detected"]
             waste_values = [1]
 
-        fig = go.Figure(go.Pie(
-            labels=labels,
-            values=waste_values,
-            hole=0.45,
-            marker=dict(
-                colors=_CHART_COLORS[: len(labels)],
-                line=dict(color=_BG, width=2),
-            ),
-            textinfo="label+percent",
-            textfont=dict(size=12),
-            hovertemplate="%{label}: %{value:.0f} MB (%{percent})<extra></extra>",
-        ))
+        fig = go.Figure(
+            go.Pie(
+                labels=labels,
+                values=waste_values,
+                hole=0.45,
+                marker=dict(
+                    colors=_CHART_COLORS[: len(labels)],
+                    line=dict(color=_BG, width=2),
+                ),
+                textinfo="label+percent",
+                textfont=dict(size=12),
+                hovertemplate="%{label}: %{value:.0f} MB (%{percent})<extra></extra>",
+            )
+        )
         _apply_layout(
             fig,
             title=dict(text="Memory Waste Breakdown", font=dict(size=15)),
@@ -407,23 +442,27 @@ class Visualizer:
         fig = go.Figure()
         for idx, p in enumerate(profiles):
             net_rx = sum(s.network_rx_mb for s in p.samples) / max(len(p.samples), 1)
-            disk_io = sum(s.block_read_mb + s.block_write_mb for s in p.samples) / max(len(p.samples), 1)
+            disk_io = sum(s.block_read_mb + s.block_write_mb for s in p.samples) / max(
+                len(p.samples), 1
+            )
             avg_pids = sum(s.pids for s in p.samples) / max(len(p.samples), 1)
 
             values = [p.cpu_p95, p.memory_p95_mb, net_rx, disk_io, avg_pids]
 
             color = _CHART_COLORS[idx % len(_CHART_COLORS)]
-            fig.add_trace(go.Scatterpolar(
-                r=[*values, values[0]],
-                theta=[*categories, categories[0]],
-                fill="toself",
-                fillcolor=color.replace(")", ",0.15)").replace("rgb", "rgba")
-                if color.startswith("rgb")
-                else color + "26",
-                line=dict(color=color, width=2),
-                name=p.name,
-                hovertemplate="%{theta}: %{r:.2f}<extra>%{fullData.name}</extra>",
-            ))
+            fig.add_trace(
+                go.Scatterpolar(
+                    r=[*values, values[0]],
+                    theta=[*categories, categories[0]],
+                    fill="toself",
+                    fillcolor=color.replace(")", ",0.15)").replace("rgb", "rgba")
+                    if color.startswith("rgb")
+                    else color + "26",
+                    line=dict(color=color, width=2),
+                    name=p.name,
+                    hovertemplate="%{theta}: %{r:.2f}<extra>%{fullData.name}</extra>",
+                )
+            )
 
         _apply_layout(
             fig,
@@ -446,16 +485,18 @@ class Visualizer:
         deltas = [c.cpu_p95_delta for c in comparisons]
         colors = [_DANGER if d > 0 else _SUCCESS for d in deltas]
 
-        fig = go.Figure(go.Bar(
-            y=names,
-            x=deltas,
-            orientation="h",
-            marker_color=colors,
-            hovertemplate="%{x:+.1f}%<extra>%{y}</extra>",
-            text=[f"{d:+.1f}%" for d in deltas],
-            textposition="outside",
-            textfont=dict(size=11),
-        ))
+        fig = go.Figure(
+            go.Bar(
+                y=names,
+                x=deltas,
+                orientation="h",
+                marker_color=colors,
+                hovertemplate="%{x:+.1f}%<extra>%{y}</extra>",
+                text=[f"{d:+.1f}%" for d in deltas],
+                textposition="outside",
+                textfont=dict(size=11),
+            )
+        )
         _apply_layout(
             fig,
             title=dict(text="CPU p95 Delta", font=dict(size=15)),
@@ -469,16 +510,18 @@ class Visualizer:
         deltas = [c.memory_p95_delta_mb for c in comparisons]
         colors = [_DANGER if d > 0 else _SUCCESS for d in deltas]
 
-        fig = go.Figure(go.Bar(
-            y=names,
-            x=deltas,
-            orientation="h",
-            marker_color=colors,
-            hovertemplate="%{x:+.1f} MB<extra>%{y}</extra>",
-            text=[f"{d:+.1f} MB" for d in deltas],
-            textposition="outside",
-            textfont=dict(size=11),
-        ))
+        fig = go.Figure(
+            go.Bar(
+                y=names,
+                x=deltas,
+                orientation="h",
+                marker_color=colors,
+                hovertemplate="%{x:+.1f} MB<extra>%{y}</extra>",
+                text=[f"{d:+.1f} MB" for d in deltas],
+                textposition="outside",
+                textfont=dict(size=11),
+            )
+        )
         _apply_layout(
             fig,
             title=dict(text="Memory p95 Delta", font=dict(size=15)),
@@ -497,15 +540,17 @@ class Visualizer:
         values = list(trends.values())
         colors = [_DANGER, _SUCCESS, _WARNING]
 
-        fig = go.Figure(go.Pie(
-            labels=labels,
-            values=values,
-            hole=0.5,
-            marker=dict(colors=colors, line=dict(color=_BG, width=2)),
-            textinfo="label+value",
-            textfont=dict(size=13),
-            hovertemplate="%{label}: %{value} metric(s)<extra></extra>",
-        ))
+        fig = go.Figure(
+            go.Pie(
+                labels=labels,
+                values=values,
+                hole=0.5,
+                marker=dict(colors=colors, line=dict(color=_BG, width=2)),
+                textinfo="label+value",
+                textfont=dict(size=13),
+                hovertemplate="%{label}: %{value} metric(s)<extra></extra>",
+            )
+        )
         _apply_layout(
             fig,
             title=dict(text="Trend Summary", font=dict(size=15)),
@@ -519,31 +564,41 @@ class Visualizer:
     # ==================================================================
 
     def _chart_pressure_heatmap(self, stack: StackAnalysis) -> str:
-        metrics = ["CPU p95 (%)", "Mem p95 (MB)", "Avg Net RX (MB)", "Avg Disk I/O (MB)", "Avg PIDs"]
+        metrics = [
+            "CPU p95 (%)",
+            "Mem p95 (MB)",
+            "Avg Net RX (MB)",
+            "Avg Disk I/O (MB)",
+            "Avg PIDs",
+        ]
         services = [p.name for p in stack.profiles]
         z: list[list[float]] = []
 
         for p in stack.profiles:
             net_rx = sum(s.network_rx_mb for s in p.samples) / max(len(p.samples), 1)
-            disk_io = sum(s.block_read_mb + s.block_write_mb for s in p.samples) / max(len(p.samples), 1)
+            disk_io = sum(s.block_read_mb + s.block_write_mb for s in p.samples) / max(
+                len(p.samples), 1
+            )
             avg_pids = sum(s.pids for s in p.samples) / max(len(p.samples), 1)
             z.append([p.cpu_p95, p.memory_p95_mb, net_rx, disk_io, avg_pids])
 
-        fig = go.Figure(go.Heatmap(
-            z=z,
-            x=metrics,
-            y=services,
-            colorscale=[
-                [0.0, _BG],
-                [0.25, "#1e3a5f"],
-                [0.5, _PRIMARY],
-                [0.75, _WARNING],
-                [1.0, _DANGER],
-            ],
-            hovertemplate="Service: %{y}<br>Metric: %{x}<br>Value: %{z:.2f}<extra></extra>",
-            texttemplate="%{z:.1f}",
-            textfont=dict(size=11, color=_TEXT),
-        ))
+        fig = go.Figure(
+            go.Heatmap(
+                z=z,
+                x=metrics,
+                y=services,
+                colorscale=[
+                    [0.0, _BG],
+                    [0.25, "#1e3a5f"],
+                    [0.5, _PRIMARY],
+                    [0.75, _WARNING],
+                    [1.0, _DANGER],
+                ],
+                hovertemplate="Service: %{y}<br>Metric: %{x}<br>Value: %{z:.2f}<extra></extra>",
+                texttemplate="%{z:.1f}",
+                textfont=dict(size=11, color=_TEXT),
+            )
+        )
         _apply_layout(
             fig,
             title=dict(text="Resource Pressure Heatmap", font=dict(size=15)),
@@ -554,25 +609,27 @@ class Visualizer:
     def _chart_service_ranking(self, stack: StackAnalysis) -> str:
         names = [r[0] for r in stack.service_rankings]
         scores = [r[1] for r in stack.service_rankings]
-        colors = [
-            _DANGER if s > 0.7 else (_WARNING if s > 0.4 else _SUCCESS) for s in scores
-        ]
+        colors = [_DANGER if s > 0.7 else (_WARNING if s > 0.4 else _SUCCESS) for s in scores]
 
-        fig = go.Figure(go.Bar(
-            x=scores,
-            y=names,
-            orientation="h",
-            marker_color=colors,
-            hovertemplate="Score: %{x:.3f}<extra>%{y}</extra>",
-            text=[f"{s:.3f}" for s in scores],
-            textposition="outside",
-            textfont=dict(size=11),
-        ))
+        fig = go.Figure(
+            go.Bar(
+                x=scores,
+                y=names,
+                orientation="h",
+                marker_color=colors,
+                hovertemplate="Score: %{x:.3f}<extra>%{y}</extra>",
+                text=[f"{s:.3f}" for s in scores],
+                textposition="outside",
+                textfont=dict(size=11),
+            )
+        )
         _apply_layout(
             fig,
             title=dict(text="Service Ranking (Resource Pressure)", font=dict(size=15)),
             xaxis_title="Pressure Score",
-            xaxis=dict(range=[0, max(scores, default=1) * 1.25], gridcolor=_BORDER, zerolinecolor=_BORDER),
+            xaxis=dict(
+                range=[0, max(scores, default=1) * 1.25], gridcolor=_BORDER, zerolinecolor=_BORDER
+            ),
             height=max(280, 55 * len(names)),
         )
         return _fig_to_div(fig)
@@ -581,7 +638,9 @@ class Visualizer:
         n = len(stack.profiles)
         if n == 0:
             fig = go.Figure()
-            _apply_layout(fig, title=dict(text="Memory Utilization", font=dict(size=15)), height=200)
+            _apply_layout(
+                fig, title=dict(text="Memory Utilization", font=dict(size=15)), height=200
+            )
             return _fig_to_div(fig)
 
         cols = min(n, 3)
@@ -597,7 +656,9 @@ class Visualizer:
         for idx, p in enumerate(stack.profiles):
             r = idx // cols + 1
             c = idx % cols + 1
-            utilization = (p.memory_p95_mb / p.memory_limit_mb * 100) if p.memory_limit_mb > 0 else 0
+            utilization = (
+                (p.memory_p95_mb / p.memory_limit_mb * 100) if p.memory_limit_mb > 0 else 0
+            )
 
             fig.add_trace(
                 go.Indicator(

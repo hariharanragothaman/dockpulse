@@ -119,8 +119,7 @@ class TestCompareSessions:
         count: int = 10,
     ) -> list[ContainerStats]:
         return [
-            _make_sample(name=name, offset_seconds=i, cpu=cpu, mem_mb=mem_mb)
-            for i in range(count)
+            _make_sample(name=name, offset_seconds=i, cpu=cpu, mem_mb=mem_mb) for i in range(count)
         ]
 
     def test_compare_sessions_stable(self) -> None:

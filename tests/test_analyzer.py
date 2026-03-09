@@ -48,8 +48,7 @@ class TestPercentileCalculation:
 
     def test_ascending_values(self) -> None:
         samples = [
-            _make_sample(offset_seconds=i, cpu=float(i), mem_mb=float(i))
-            for i in range(1, 101)
+            _make_sample(offset_seconds=i, cpu=float(i), mem_mb=float(i)) for i in range(1, 101)
         ]
         result = Analyzer().analyze(samples)
 
@@ -106,9 +105,7 @@ class TestAnomalyDetection:
         assert any("CPU spike" in a for a in anomalies)
 
     def test_over_provisioned_flagged(self) -> None:
-        profile = self._profile_with_usage(
-            mem_p95=10.0, mem_limit=512.0, cpu_p95=2.0, peak_cpu=5.0
-        )
+        profile = self._profile_with_usage(mem_p95=10.0, mem_limit=512.0, cpu_p95=2.0, peak_cpu=5.0)
         anomalies = Analyzer().detect_anomalies(profile)
         assert any("Over-provisioned" in a for a in anomalies)
 

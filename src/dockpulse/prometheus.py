@@ -125,55 +125,75 @@ class PrometheusExporter:
             blk_write.append((labels, s.block_write_mb * _MB_TO_BYTES))
             pids.append((labels, float(s.pids)))
 
-        sections.append(_format_gauge(
-            "dockpulse_container_cpu_percent",
-            "CPU usage percentage",
-            cpu,
-        ))
-        sections.append(_format_gauge(
-            "dockpulse_container_memory_usage_bytes",
-            "Memory usage in bytes",
-            mem_usage,
-        ))
-        sections.append(_format_gauge(
-            "dockpulse_container_memory_limit_bytes",
-            "Memory limit in bytes",
-            mem_limit,
-        ))
-        sections.append(_format_gauge(
-            "dockpulse_container_memory_percent",
-            "Memory usage as a percentage of limit",
-            mem_pct,
-        ))
-        sections.append(_format_gauge(
-            "dockpulse_container_network_rx_bytes",
-            "Total network bytes received",
-            net_rx,
-        ))
-        sections.append(_format_gauge(
-            "dockpulse_container_network_tx_bytes",
-            "Total network bytes transmitted",
-            net_tx,
-        ))
-        sections.append(_format_gauge(
-            "dockpulse_container_block_read_bytes",
-            "Total block device bytes read",
-            blk_read,
-        ))
-        sections.append(_format_gauge(
-            "dockpulse_container_block_write_bytes",
-            "Total block device bytes written",
-            blk_write,
-        ))
-        sections.append(_format_gauge(
-            "dockpulse_container_pids",
-            "Number of running processes",
-            pids,
-        ))
-        sections.append(_format_gauge(
-            "dockpulse_containers_total",
-            "Total number of monitored containers",
-            [("", float(len(stats)))],
-        ))
+        sections.append(
+            _format_gauge(
+                "dockpulse_container_cpu_percent",
+                "CPU usage percentage",
+                cpu,
+            )
+        )
+        sections.append(
+            _format_gauge(
+                "dockpulse_container_memory_usage_bytes",
+                "Memory usage in bytes",
+                mem_usage,
+            )
+        )
+        sections.append(
+            _format_gauge(
+                "dockpulse_container_memory_limit_bytes",
+                "Memory limit in bytes",
+                mem_limit,
+            )
+        )
+        sections.append(
+            _format_gauge(
+                "dockpulse_container_memory_percent",
+                "Memory usage as a percentage of limit",
+                mem_pct,
+            )
+        )
+        sections.append(
+            _format_gauge(
+                "dockpulse_container_network_rx_bytes",
+                "Total network bytes received",
+                net_rx,
+            )
+        )
+        sections.append(
+            _format_gauge(
+                "dockpulse_container_network_tx_bytes",
+                "Total network bytes transmitted",
+                net_tx,
+            )
+        )
+        sections.append(
+            _format_gauge(
+                "dockpulse_container_block_read_bytes",
+                "Total block device bytes read",
+                blk_read,
+            )
+        )
+        sections.append(
+            _format_gauge(
+                "dockpulse_container_block_write_bytes",
+                "Total block device bytes written",
+                blk_write,
+            )
+        )
+        sections.append(
+            _format_gauge(
+                "dockpulse_container_pids",
+                "Number of running processes",
+                pids,
+            )
+        )
+        sections.append(
+            _format_gauge(
+                "dockpulse_containers_total",
+                "Total number of monitored containers",
+                [("", float(len(stats)))],
+            )
+        )
 
         return "\n\n".join(sections) + "\n"

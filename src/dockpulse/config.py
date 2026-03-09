@@ -92,16 +92,10 @@ def load_config(config_path: str | None = None) -> Config:
                 if not data:
                     return Config()
                 return Config(
-                    sample_interval_seconds=float(
-                        data.get("sample_interval_seconds", 1.0)
-                    ),
-                    default_profile_duration=str(
-                        data.get("default_profile_duration", "1h")
-                    ),
+                    sample_interval_seconds=float(data.get("sample_interval_seconds", 1.0)),
+                    default_profile_duration=str(data.get("default_profile_duration", "1h")),
                     headroom_percent=float(data.get("headroom_percent", 20.0)),
-                    percentiles=tuple(
-                        int(p) for p in data.get("percentiles", [50, 95, 99])
-                    ),
+                    percentiles=tuple(int(p) for p in data.get("percentiles", [50, 95, 99])),
                     output_format=str(data.get("output_format", "rich")),
                     db_path=str(data.get("db_path", "~/.dockpulse/profiles.db")),
                 )
