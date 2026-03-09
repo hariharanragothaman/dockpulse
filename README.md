@@ -26,10 +26,10 @@
   <a href="https://hub.docker.com/r/hariharanragothaman/dockpulse"><img src="https://img.shields.io/docker/image-size/hariharanragothaman/dockpulse?style=flat-square&label=image%20size" alt="Docker Image Size"></a>
 </p>
 
-<!-- TODO: Uncomment once published to PyPI
-  <a href="https://pypi.org/project/dockpulse/"><img src="https://img.shields.io/pypi/v/dockpulse?style=flat-square&logo=pypi&logoColor=white&color=3775A9" alt="PyPI Version"></a>
-  <a href="https://pypi.org/project/dockpulse/"><img src="https://img.shields.io/pypi/dm/dockpulse?style=flat-square&logo=pypi&logoColor=white&label=downloads" alt="PyPI Downloads"></a>
--->
+<p align="center">
+  <a href="https://pypi.org/project/dockpulse/"><img src="https://img.shields.io/pypi/v/dockpulse?style=flat-square&color=3775A9" alt="PyPI Version"></a>
+  <a href="https://pypi.org/project/dockpulse/"><img src="https://img.shields.io/pypi/dm/dockpulse?style=flat-square&label=downloads" alt="PyPI Downloads"></a>
+</p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/docker-%232496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker">

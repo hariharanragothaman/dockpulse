@@ -1,0 +1,93 @@
+name: Publish to PyPI
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  ci:
+    name: CI Gate
+    uses: ./.github/workflows/ci.yml
+
+  version-and-publish:
+    name: Version Bump & Publish
+    needs: ci
+    runs-on: ubuntu-latest
+    if: >-
+      !contains(github.event.head_commit.message, '[skip publish]') &&
+      !contains(github.event.head_commit.message, '[skip ci]')
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build tools
+        run: pip install build twine
+
+      - name: Determine version bump
+        id: bump
+        run: |
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
+          CURRENT=$(python -c "
+          import re
+          with open('pyproject.toml') as f:
+              m = re.search(r'version\s*=\s*\"(\d+\.\d+\.\d+)\"', f.read())
+              print(m.group(1))
+          ")
+          echo "current=$CURRENT" >> "$GITHUB_OUTPUT"
+
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+
+          if echo "$COMMIT_MSG" | grep -qiE '\[major\]|BREAKING CHANGE'; then
+            MAJOR=$((MAJOR + 1))
+            MINOR=0
+            PATCH=0
+          elif echo "$COMMIT_MSG" | grep -qiE '\[minor\]|feat:'; then
+            MINOR=$((MINOR + 1))
+            PATCH=0
+          else
+            PATCH=$((PATCH + 1))
+          fi
+
+          NEW="${MAJOR}.${MINOR}.${PATCH}"
+          echo "new=$NEW" >> "$GITHUB_OUTPUT"
+          echo "Bumping $CURRENT -> $NEW"
+
+      - name: Update version in pyproject.toml
+        run: |
+          sed -i "s/^version = \"${{ steps.bump.outputs.current }}\"/version = \"${{ steps.bump.outputs.new }}\"/" pyproject.toml
+
+      - name: Update version in __init__.py
+        run: |
+          sed -i "s/__version__ = \"${{ steps.bump.outputs.current }}\"/__version__ = \"${{ steps.bump.outputs.new }}\"/" src/dockpulse/__init__.py
+
+      - name: Build package
+        run: python -m build
+
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: twine upload dist/*
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add pyproject.toml src/dockpulse/__init__.py
+          git diff --cached --quiet && echo "No version change" && exit 0
+          git commit -m "chore: bump version to ${{ steps.bump.outputs.new }} [skip publish]"
+          git push
+
+      - name: Create git tag
+        run: |
+          git tag "v${{ steps.bump.outputs.new }}"
+          git push origin "v${{ steps.bump.outputs.new }}"
