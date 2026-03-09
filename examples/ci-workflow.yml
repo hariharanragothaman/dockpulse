@@ -1,0 +1,22 @@
+name: Resource Analysis
+on: [push]
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start services
+        run: docker compose up -d
+      - name: Wait for services
+        run: sleep 30
+      - name: Run DockPulse Analysis
+        uses: hariharanragothaman/dockpulse@main
+        with:
+          duration: '5m'
+          compose-file: docker-compose.yml
+          threshold: '20'
+      - name: Upload Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dockpulse-report
+          path: dockpulse-report.html

@@ -1,0 +1,47 @@
+name: 'DockPulse Resource Analysis'
+description: 'Profile Docker container resource usage and detect regressions in CI'
+branding:
+  icon: 'activity'
+  color: 'blue'
+
+inputs:
+  duration:
+    description: 'Profiling duration (e.g. 5m, 10m)'
+    required: false
+    default: '5m'
+  compose-file:
+    description: 'Path to docker-compose.yml to analyze'
+    required: false
+  threshold:
+    description: 'Max allowed memory increase percentage before failing'
+    required: false
+    default: '20'
+  baseline:
+    description: 'Path to baseline JSON report for comparison'
+    required: false
+
+outputs:
+  report:
+    description: 'Path to the generated JSON report'
+    value: ${{ steps.dockpulse.outputs.report }}
+  waste-percentage:
+    description: 'Overall resource waste percentage'
+    value: ${{ steps.dockpulse.outputs.waste-percentage }}
+  passed:
+    description: 'Whether the check passed (true/false)'
+    value: ${{ steps.dockpulse.outputs.passed }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Run DockPulse Analysis
+      id: dockpulse
+      shell: bash
+      run: |
+        "${{ github.action_path }}/scripts/ci-analyze.sh" \
+          --duration "${{ inputs.duration }}" \
+          --threshold "${{ inputs.threshold }}" \
+          --report-output "${{ github.workspace }}/dockpulse-report.json" \
+          --html-output "${{ github.workspace }}/dockpulse-report.html" \
+          --compose-file "${{ inputs.compose-file }}" \
+          --baseline "${{ inputs.baseline }}"

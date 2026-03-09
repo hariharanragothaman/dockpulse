@@ -20,9 +20,10 @@ from dockpulse.collector import StatsCollector
 from dockpulse.compose_rewriter import ComposeRewriter
 from dockpulse.config import Config, format_duration, parse_duration
 from dockpulse.dashboard import Dashboard
-from dockpulse.models import ContainerStats, ProfileResult
+from dockpulse.models import ContainerStats, HistoricalComparison, ProfileResult
 from dockpulse.reporter import Reporter
 from dockpulse.rightsizer import RightSizer
+from dockpulse.visualizer import Visualizer
 
 console = Console()
 app = typer.Typer(
@@ -448,6 +449,89 @@ def waste() -> None:
 
 
 @app.command()
+def report(
+    output: str = typer.Option("report.html", "--output", "-o", help="Output HTML file path"),
+    report_type: str = typer.Option(
+        "profile", "--type", "-t", help="Report type: profile, comparison, stack"
+    ),
+    session_a: str | None = typer.Option(
+        None, "--session-a", help="First session ID for comparison reports"
+    ),
+    session_b: str | None = typer.Option(
+        None, "--session-b", help="Second session ID for comparison reports"
+    ),
+    compose_file: str | None = typer.Option(
+        None, "--compose", "-C", help="Compose file for stack reports"
+    ),
+) -> None:
+    """Generate an interactive HTML report with Plotly charts."""
+    db = str(_config.resolved_db_path)
+    viz = Visualizer()
+
+    if report_type == "profile":
+        profiles = _load_profiles_from_db(db)
+        viz.generate_profile_report(profiles, output)
+        console.print(f"[green]Profile report written to {output}[/green]")
+
+    elif report_type == "comparison":
+        if not session_a or not session_b:
+            console.print(
+                "[red]--session-a and --session-b are required for comparison reports.[/red]"
+            )
+            raise typer.Exit(1)
+
+        profiles_a = _load_samples_for_session(db, session_a)
+        profiles_b = _load_samples_for_session(db, session_b)
+
+        lookup_a = {p.name: p for p in profiles_a}
+        lookup_b = {p.name: p for p in profiles_b}
+        all_names = sorted(set(lookup_a.keys()) | set(lookup_b.keys()))
+
+        threshold = 5.0
+        comparisons = []
+        for name in all_names:
+            pa = lookup_a.get(name)
+            pb = lookup_b.get(name)
+            cpu_a = pa.cpu_p95 if pa else 0.0
+            cpu_b = pb.cpu_p95 if pb else 0.0
+            mem_a = pa.memory_p95_mb if pa else 0.0
+            mem_b = pb.memory_p95_mb if pb else 0.0
+            cpu_delta = cpu_b - cpu_a
+            mem_delta = mem_b - mem_a
+
+            def _trend(delta: float, base: float) -> str:
+                pct = abs(delta / base) * 100 if base else abs(delta)
+                if pct < threshold:
+                    return "stable"
+                return "increasing" if delta > 0 else "decreasing"
+
+            comparisons.append(HistoricalComparison(
+                session_a_id=session_a,
+                session_b_id=session_b,
+                container_name=name,
+                cpu_p95_delta=cpu_delta,
+                memory_p95_delta_mb=mem_delta,
+                cpu_trend=_trend(cpu_delta, cpu_a),
+                memory_trend=_trend(mem_delta, mem_a),
+            ))
+
+        viz.generate_comparison_report(comparisons, output)
+        console.print(f"[green]Comparison report written to {output}[/green]")
+
+    elif report_type == "stack":
+        profiles = _load_profiles_from_db(db)
+        analyzer = Analyzer()
+        stack_analysis = analyzer.analyze_stack(profiles, compose_file)
+        viz.generate_stack_report(stack_analysis, output)
+        console.print(f"[green]Stack report written to {output}[/green]")
+
+    else:
+        console.print(f"[red]Unknown report type: {report_type}[/red]")
+        console.print("Valid types: profile, comparison, stack")
+        raise typer.Exit(1)
+
+
+@app.command()
 def sessions() -> None:
     """List all profiling sessions stored in the database.
 
@@ -796,6 +880,34 @@ def clean(
         return
 
     console.print("[yellow]Specify --all to delete everything or --session/-s to delete a specific session.[/yellow]")
+
+
+@app.command(name="export")
+def export_metrics(
+    port: int = typer.Option(9090, "--port", "-p", help="Port for Prometheus metrics endpoint"),
+) -> None:
+    """Start a Prometheus metrics exporter.
+
+    Runs an HTTP server that exposes container resource metrics
+    in Prometheus text format at http://localhost:<port>/metrics.
+    Press Ctrl+C to stop.
+    """
+    from dockpulse.prometheus import PrometheusExporter
+
+    exporter = PrometheusExporter(port=port)
+    exporter.start()
+    console.print(
+        f"[bold cyan]Prometheus exporter running[/bold cyan] at "
+        f"[link=http://localhost:{port}/metrics]http://localhost:{port}/metrics[/link]"
+    )
+    console.print("[dim]Press Ctrl+C to stop.[/dim]")
+    try:
+        import threading
+
+        threading.Event().wait()
+    except KeyboardInterrupt:
+        exporter.stop()
+        console.print("\n[yellow]Exporter stopped.[/yellow]")
 
 
 def _ensure_sessions_table(db_path: str) -> None:
