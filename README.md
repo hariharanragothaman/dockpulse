@@ -364,7 +364,7 @@ The right-sizing engine applies a configurable headroom percentage on top of obs
 - [ ] Cost estimation (map waste to cloud provider pricing)
 - [ ] Grafana dashboard templates
 - [ ] Container startup time profiling
-- [ ] PyPI package publishing
+- [x] PyPI package publishing with auto-versioning
 
 ## Contributing
 
