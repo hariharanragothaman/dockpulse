@@ -225,31 +225,114 @@ Right-size with: dockpulse right-size docker-compose.yml
 
 ## Architecture
 
-```
-src/dockpulse/
-  cli.py               Typer CLI entry point with 5 commands
-  collector.py          Docker SDK stats streaming + SQLite persistence
-  analyzer.py           Percentile computation and anomaly detection
-  rightsizer.py         Right-sizing recommendations with headroom
-  compose_rewriter.py   YAML-preserving compose file patching
-  dashboard.py          Rich live terminal UI with sparklines
-  reporter.py           JSON / HTML / terminal report generation
-  models.py             Dataclass-based data models
-  config.py             Configuration and duration parsing
+### Data Flow
+
+```mermaid
+flowchart LR
+    Docker["Docker Daemon"]
+    Collector["StatsCollector"]
+    DB["SQLite DB"]
+    Analyzer["Analyzer"]
+    Profile["ProfileResult"]
+    RightSizer["RightSizer"]
+    Compose["ComposeRewriter"]
+    Reporter["Reporter"]
+    Dashboard["Dashboard"]
+    Visualizer["Visualizer"]
+    Prometheus["PrometheusExporter"]
+
+    Docker -->|"/containers/stats API"| Collector
+    Collector -->|"persist samples"| DB
+    Collector -->|"live stream"| Dashboard
+    Collector -->|"live stream"| Prometheus
+    DB -->|"load samples"| Analyzer
+    Analyzer -->|"percentiles + anomalies"| Profile
+    Profile --> RightSizer
+    Profile --> Reporter
+    Profile --> Visualizer
+    RightSizer -->|"recommendations"| Compose
+    Compose -->|"optimized YAML"| ComposeFile["docker-compose.yml"]
+    Reporter -->|"JSON / HTML / terminal"| Output["Reports"]
+    Visualizer -->|"Plotly charts"| HTMLReport["Interactive HTML"]
+    Dashboard -->|"Rich live UI"| Terminal["Terminal"]
+    Prometheus -->|"/metrics"| PromScrape["Prometheus / Grafana"]
 ```
 
+### Module Dependency Graph
+
+```mermaid
+flowchart TD
+    CLI["cli.py"]
+    Collector["collector.py"]
+    AnalyzerMod["analyzer.py"]
+    Models["models.py"]
+    Config["config.py"]
+    DashboardMod["dashboard.py"]
+    ReporterMod["reporter.py"]
+    RightSizerMod["rightsizer.py"]
+    ComposeRewriterMod["compose_rewriter.py"]
+    VisualizerMod["visualizer.py"]
+    PrometheusMod["prometheus.py"]
+
+    CLI --> Collector
+    CLI --> AnalyzerMod
+    CLI --> DashboardMod
+    CLI --> ReporterMod
+    CLI --> RightSizerMod
+    CLI --> ComposeRewriterMod
+    CLI --> VisualizerMod
+    CLI --> PrometheusMod
+    CLI --> Config
+    CLI --> Models
+    Collector --> Models
+    AnalyzerMod --> Models
+    DashboardMod --> Models
+    ReporterMod --> Models
+    RightSizerMod --> Models
+    ComposeRewriterMod --> Models
+    PrometheusMod --> Collector
 ```
-Docker Daemon ──> StatsCollector ──> SQLite DB
-                                        │
-                                        ├──> Analyzer ──> ProfileResult
-                                        │                     │
-                                        │                     ├──> RightSizer ──> Recommendations
-                                        │                     │                        │
-                                        │                     │                   ComposeRewriter
-                                        │                     │
-                                        │                     └──> Reporter (JSON/HTML/Terminal)
-                                        │
-                                        └──> Dashboard (Live Rich UI)
+
+### CLI Command Map
+
+```mermaid
+flowchart TD
+    CLI["dockpulse"]
+    Profile["profile"]
+    Analyze["analyze"]
+    RightSize["right-size"]
+    Dash["dashboard"]
+    Waste["waste"]
+    Report["report"]
+    Sessions["sessions"]
+    Compare["compare"]
+    Stack["stack"]
+    Clean["clean"]
+    Export["export"]
+
+    CLI --> Profile
+    CLI --> Analyze
+    CLI --> RightSize
+    CLI --> Dash
+    CLI --> Waste
+    CLI --> Report
+    CLI --> Sessions
+    CLI --> Compare
+    CLI --> Stack
+    CLI --> Clean
+    CLI --> Export
+
+    Profile ---|"collect stats over time"| SQLite["SQLite DB"]
+    Analyze ---|"percentile analysis"| TermOut["Terminal / JSON / HTML"]
+    RightSize ---|"optimize limits"| ComposeOut["Compose YAML"]
+    Dash ---|"live monitoring"| LiveUI["Rich Live UI"]
+    Waste ---|"quantify waste"| WasteOut["Waste Report"]
+    Report ---|"interactive charts"| PlotlyOut["Plotly HTML"]
+    Sessions ---|"list sessions"| SessionTable["Session Table"]
+    Compare ---|"diff two sessions"| DeltaTable["Delta Table"]
+    Stack ---|"multi-container analysis"| StackOut["Rankings + Bottleneck"]
+    Clean ---|"delete data"| CleanDB["SQLite Cleanup"]
+    Export ---|"Prometheus metrics"| MetricsOut["/metrics endpoint"]
 ```
 
 DockPulse talks directly to the Docker daemon via the Docker SDK for Python. Stats are collected using the `/containers/{id}/stats` API endpoint and persisted to a local SQLite database for offline analysis.
@@ -271,13 +354,17 @@ The right-sizing engine applies a configurable headroom percentage on top of obs
 
 ## Roadmap
 
-- [ ] Prometheus metrics export
+- [x] Prometheus metrics export
+- [x] Historical trend analysis and regression detection
+- [x] GitHub Action for CI resource regression checks
+- [x] Interactive Plotly HTML reports
+- [x] Session management and comparison
+- [x] Multi-container stack analysis
 - [ ] Slack / Discord alert integration
-- [ ] Historical trend analysis and regression detection
 - [ ] Cost estimation (map waste to cloud provider pricing)
-- [ ] GitHub Action for CI resource regression checks
 - [ ] Grafana dashboard templates
 - [ ] Container startup time profiling
+- [ ] PyPI package publishing
 
 ## Contributing
 
