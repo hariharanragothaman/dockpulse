@@ -79,10 +79,20 @@ if ! docker info &>/dev/null 2>&1; then
     exit 1
 fi
 
+# Activate the project venv if it exists and dockpulse isn't already available
+if ! command -v dockpulse &>/dev/null; then
+    if [[ -f "$REPO_ROOT/.venv/bin/activate" ]]; then
+        info "Activating project virtualenv..."
+        # shellcheck disable=SC1091
+        source "$REPO_ROOT/.venv/bin/activate"
+    fi
+fi
+
 if ! command -v dockpulse &>/dev/null; then
     warn "dockpulse not found in PATH. Trying pip install..."
-    pip install -e "$REPO_ROOT" 2>/dev/null || {
-        error "Failed to install dockpulse. Install it with: pip install -e ."
+    pip install -e "$REPO_ROOT" || {
+        error "Failed to install dockpulse."
+        error "Activate your virtualenv first, or run: pip install -e $REPO_ROOT"
         exit 1
     }
 fi
