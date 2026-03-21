@@ -1,0 +1,258 @@
+# DockPulse Live Demo
+#
+# Spins up the top 10 most popular Docker Hub images with realistic workloads
+# and deliberate over/under-provisioning so DockPulse can demonstrate:
+#   - Resource profiling across a diverse container fleet
+#   - Waste detection on over-provisioned containers
+#   - Anomaly detection on CPU-intensive workloads
+#   - Right-sizing recommendations
+#   - Grafana dashboard visualization
+#
+# Usage:
+#   cd examples/demo
+#   ./run-demo.sh          # orchestrates everything
+#
+#   Or manually:
+#     docker compose up -d
+#     dockpulse profile --duration 3m
+#     dockpulse analyze
+#     dockpulse waste
+
+services:
+  # ---------- 1. nginx (most pulled image on Docker Hub) ----------
+  # Serves static content. Massively over-provisioned to show waste.
+  nginx:
+    image: nginx:alpine
+    container_name: demo-nginx
+    ports:
+      - "8080:80"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "2.0"
+        reservations:
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # ---------- 2. redis ----------
+  # In-memory cache. Moderate allocation, low actual usage.
+  redis:
+    image: redis:7-alpine
+    container_name: demo-redis
+    command: redis-server --maxmemory 64mb --maxmemory-policy allkeys-lru
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "1.0"
+        reservations:
+          memory: 64M
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # ---------- 3. postgres ----------
+  # Relational database. Heavily over-provisioned for demo waste detection.
+  postgres:
+    image: postgres:16-alpine
+    container_name: demo-postgres
+    environment:
+      POSTGRES_USER: dockpulse
+      POSTGRES_PASSWORD: dockpulse
+      POSTGRES_DB: demo
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    deploy:
+      resources:
+        limits:
+          memory: 2048M
+          cpus: "2.0"
+        reservations:
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dockpulse"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # ---------- 4. python (API workload) ----------
+  # Simulates a Python API server doing periodic CPU-heavy work.
+  python-api:
+    image: python:3.12-slim
+    container_name: demo-python-api
+    command: >
+      python -c "
+      import http.server, time, threading, hashlib, os
+      def cpu_work():
+          while True:
+              for _ in range(50):
+                  hashlib.sha256(os.urandom(4096)).hexdigest()
+              time.sleep(0.3)
+      threading.Thread(target=cpu_work, daemon=True).start()
+      http.server.HTTPServer(('', 8000), http.server.SimpleHTTPRequestHandler).serve_forever()
+      "
+    ports:
+      - "8000:8000"
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+          cpus: "2.0"
+        reservations:
+          memory: 256M
+
+  # ---------- 5. node (background worker) ----------
+  # Simulates a Node.js worker doing periodic JSON processing.
+  node-worker:
+    image: node:20-alpine
+    container_name: demo-node-worker
+    command: >
+      node -e "
+      setInterval(() => {
+        const data = Array.from({length: 10000}, (_, i) => ({id: i, value: Math.random()}));
+        JSON.parse(JSON.stringify(data));
+      }, 500);
+      console.log('Node worker running...');
+      setInterval(() => {}, 60000);
+      "
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+        reservations:
+          memory: 128M
+
+  # ---------- 6. memcached ----------
+  # Distributed cache. Deliberately over-provisioned.
+  memcached:
+    image: memcached:alpine
+    container_name: demo-memcached
+    command: memcached -m 32
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+        reservations:
+          memory: 64M
+
+  # ---------- 7. mysql ----------
+  # Another popular database. Over-provisioned relative to idle usage.
+  mysql:
+    image: mysql:8.0
+    container_name: demo-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: dockpulse
+      MYSQL_DATABASE: demo
+    volumes:
+      - mysqldata:/var/lib/mysql
+    deploy:
+      resources:
+        limits:
+          memory: 2048M
+          cpus: "2.0"
+        reservations:
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 30s
+
+  # ---------- 8. mongo ----------
+  # Document database. Over-provisioned for waste demo.
+  mongo:
+    image: mongo:7
+    container_name: demo-mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: dockpulse
+      MONGO_INITDB_ROOT_PASSWORD: dockpulse
+    volumes:
+      - mongodata:/data/db
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+          cpus: "2.0"
+        reservations:
+          memory: 256M
+
+  # ---------- 9. httpd (Apache) ----------
+  # Classic web server. Over-provisioned for comparison with nginx.
+  httpd:
+    image: httpd:alpine
+    container_name: demo-httpd
+    ports:
+      - "8081:80"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+        reservations:
+          memory: 128M
+
+  # ---------- 10. rabbitmq (message broker) ----------
+  # Message queue with management UI. Moderate allocation.
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: demo-rabbitmq
+    ports:
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: dockpulse
+      RABBITMQ_DEFAULT_PASS: dockpulse
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+        reservations:
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # ---------- Traffic generator ----------
+  # Drives HTTP requests to nginx, httpd, and the Python API to produce
+  # realistic network I/O and varied CPU load.
+  traffic-gen:
+    image: alpine:latest
+    container_name: demo-traffic-gen
+    command: >
+      sh -c "
+      apk add --no-cache curl > /dev/null 2>&1;
+      echo 'Generating traffic...';
+      while true; do
+        curl -s http://nginx/ > /dev/null 2>&1;
+        curl -s http://httpd/ > /dev/null 2>&1;
+        curl -s http://python-api:8000/ > /dev/null 2>&1;
+        sleep 0.5;
+      done
+      "
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: "0.25"
+    depends_on:
+      - nginx
+      - httpd
+      - python-api
+
+volumes:
+  pgdata:
+  mysqldata:
+  mongodata:
