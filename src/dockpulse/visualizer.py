@@ -27,6 +27,14 @@ _BORDER = "#334155"
 
 _CHART_COLORS = [_PRIMARY, _SUCCESS, _WARNING, _DANGER, "#a78bfa", "#fb923c", "#2dd4bf"]
 
+
+def _hex_to_rgba(hex_color: str, alpha: float = 1.0) -> str:
+    """Convert a hex color like ``#38bdf8`` to ``rgba(56,189,248,0.15)``."""
+    h = hex_color.lstrip("#")
+    r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+    return f"rgba({r},{g},{b},{alpha})"
+
+
 _PLOTLY_LAYOUT_DEFAULTS: dict = dict(
     paper_bgcolor=_SURFACE,
     plot_bgcolor=_BG,
@@ -450,14 +458,13 @@ class Visualizer:
             values = [p.cpu_p95, p.memory_p95_mb, net_rx, disk_io, avg_pids]
 
             color = _CHART_COLORS[idx % len(_CHART_COLORS)]
+            fill = _hex_to_rgba(color, 0.15)
             fig.add_trace(
                 go.Scatterpolar(
                     r=[*values, values[0]],
                     theta=[*categories, categories[0]],
                     fill="toself",
-                    fillcolor=color.replace(")", ",0.15)").replace("rgb", "rgba")
-                    if color.startswith("rgb")
-                    else color + "26",
+                    fillcolor=fill,
                     line=dict(color=color, width=2),
                     name=p.name,
                     hovertemplate="%{theta}: %{r:.2f}<extra>%{fullData.name}</extra>",
