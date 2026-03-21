@@ -104,7 +104,8 @@ echo ""
 echo -e "${BOLD}━━━ Step 1/5: Starting Top 10 Docker Hub Containers ━━━${NC}"
 info "Pulling and starting containers..."
 
-docker compose -f "$SCRIPT_DIR/docker-compose.yml" up -d --pull always
+docker compose -f "$SCRIPT_DIR/docker-compose.yml" pull
+docker compose -f "$SCRIPT_DIR/docker-compose.yml" up -d
 
 info "Waiting for containers to stabilize (30 seconds)..."
 sleep 30
