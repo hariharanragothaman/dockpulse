@@ -10,7 +10,6 @@ import json
 import sqlite3
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -19,10 +18,7 @@ from typer.testing import CliRunner
 from dockpulse import __version__
 from dockpulse.cli import app
 from dockpulse.config import Config
-from dockpulse.models import ContainerStats, StartupProfile
-
-if TYPE_CHECKING:
-    pass
+from dockpulse.models import StartupProfile
 
 runner = CliRunner()
 
@@ -90,11 +86,37 @@ def seeded_db(tmp_db: Path) -> Path:
         ts = started + timedelta(seconds=i * 30)
         conn.execute(
             "INSERT INTO samples VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            ("ctr1", "web-app", ts.isoformat(), 25.0 + i, 200.0 + i * 5, 512.0, 40.0, 1.0, 0.5, 0.2, 0.1, 10),
+            (
+                "ctr1",
+                "web-app",
+                ts.isoformat(),
+                25.0 + i,
+                200.0 + i * 5,
+                512.0,
+                40.0,
+                1.0,
+                0.5,
+                0.2,
+                0.1,
+                10,
+            ),
         )
         conn.execute(
             "INSERT INTO samples VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            ("ctr2", "redis", ts.isoformat(), 5.0 + i, 50.0 + i, 256.0, 20.0, 0.1, 0.05, 0.01, 0.005, 3),
+            (
+                "ctr2",
+                "redis",
+                ts.isoformat(),
+                5.0 + i,
+                50.0 + i,
+                256.0,
+                20.0,
+                0.1,
+                0.05,
+                0.01,
+                0.005,
+                3,
+            ),
         )
 
     conn.commit()
@@ -144,12 +166,38 @@ def seeded_db_two_sessions(tmp_db: Path) -> Path:
         ts1 = s1_start + timedelta(seconds=i * 30)
         conn.execute(
             "INSERT INTO samples VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            ("ctr1", "web-app", ts1.isoformat(), 20.0 + i, 180.0 + i * 5, 512.0, 35.0, 1.0, 0.5, 0.2, 0.1, 10),
+            (
+                "ctr1",
+                "web-app",
+                ts1.isoformat(),
+                20.0 + i,
+                180.0 + i * 5,
+                512.0,
+                35.0,
+                1.0,
+                0.5,
+                0.2,
+                0.1,
+                10,
+            ),
         )
         ts2 = s2_start + timedelta(seconds=i * 30)
         conn.execute(
             "INSERT INTO samples VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            ("ctr1", "web-app", ts2.isoformat(), 40.0 + i, 300.0 + i * 5, 512.0, 60.0, 2.0, 1.0, 0.4, 0.2, 12),
+            (
+                "ctr1",
+                "web-app",
+                ts2.isoformat(),
+                40.0 + i,
+                300.0 + i * 5,
+                512.0,
+                60.0,
+                2.0,
+                1.0,
+                0.4,
+                0.2,
+                12,
+            ),
         )
 
     conn.commit()
@@ -621,10 +669,14 @@ class TestExport:
         mock_exporter.start.return_value = None
         mock_exporter.stop.return_value = None
 
-        with patch("dockpulse.prometheus.PrometheusExporter", return_value=mock_exporter) as mock_cls:
-            with patch("threading.Event") as mock_event:
-                mock_event.return_value.wait.side_effect = KeyboardInterrupt
-                result = runner.invoke(app, ["export", "-p", "9091"])
+        with (
+            patch(
+                "dockpulse.prometheus.PrometheusExporter", return_value=mock_exporter
+            ) as mock_cls,
+            patch("threading.Event") as mock_event,
+        ):
+            mock_event.return_value.wait.side_effect = KeyboardInterrupt
+            result = runner.invoke(app, ["export", "-p", "9091"])
 
         assert result.exit_code == 0
         mock_cls.assert_called_once_with(port=9091)
@@ -736,9 +788,7 @@ class TestStartup:
 
     def test_startup_with_compose(self, tmp_path: Path) -> None:
         compose = tmp_path / "docker-compose.yml"
-        compose.write_text(
-            "services:\n  web:\n    image: nginx\n  redis:\n    image: redis\n"
-        )
+        compose.write_text("services:\n  web:\n    image: nginx\n  redis:\n    image: redis\n")
 
         mock_profiler = MagicMock()
         mock_profiler.profile_compose_startup.return_value = [
