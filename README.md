@@ -108,6 +108,61 @@ dockpulse dashboard
 dockpulse waste
 ```
 
+## Example: Profiling nginx
+
+Here's what DockPulse reveals when you profile a single `nginx:alpine` container running with a 512 MB memory limit — a common default that's wildly over-provisioned for a static web server.
+
+```bash
+# Start an over-provisioned nginx container
+docker run -d --name my-nginx --memory=512m --cpus=2.0 -p 8080:80 nginx:alpine
+
+# Profile it for 1 minute
+dockpulse profile --duration 1m --containers my-nginx
+```
+
+<p align="center">
+  <img src="assets/example-profile.svg" alt="DockPulse profiling output" width="700">
+</p>
+
+### Waste Detection
+
+DockPulse immediately identifies the over-provisioning. nginx uses ~5 MB of memory but has a 512 MB limit — **98.9% waste**.
+
+```bash
+dockpulse analyze
+dockpulse waste
+```
+
+<p align="center">
+  <img src="assets/example-analyze.svg" alt="DockPulse waste report showing 98.9% memory waste" width="700">
+</p>
+
+### Cloud Cost Impact
+
+Map that waste to real cloud pricing:
+
+```bash
+dockpulse cost --provider aws
+```
+
+<p align="center">
+  <img src="assets/example-cost.svg" alt="DockPulse cloud cost estimation" width="700">
+</p>
+
+### Interactive HTML Report
+
+Generate a full interactive report with Plotly charts — CPU over time, memory usage vs limits, waste breakdown, and a multi-dimensional radar comparison.
+
+```bash
+dockpulse report --output report.html --type profile
+```
+
+<p align="center">
+  <img src="assets/example-report.png" alt="DockPulse interactive HTML report with charts" width="700">
+</p>
+
+> Multiply this across a production fleet of 10-50 containers and the waste — and savings — become significant. See the [live demo](examples/demo/README.md) for a full 10-container example.
+
 ## CLI Reference
 
 ### `dockpulse profile`
