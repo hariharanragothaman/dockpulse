@@ -46,6 +46,9 @@ Thumbs.db
 .dockpulse/
 *.db
 
+# Demo generated reports
+examples/demo/demo-report.html
+
 # Environment
 .env
 .env.local

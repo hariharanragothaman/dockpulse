@@ -57,6 +57,7 @@ def _load_profiles_from_db(db_path: str) -> list[ProfileResult]:
         raise typer.Exit(1)
 
     conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
     rows = conn.execute("SELECT * FROM samples ORDER BY name, timestamp").fetchall()
     conn.close()
 
@@ -67,18 +68,18 @@ def _load_profiles_from_db(db_path: str) -> list[ProfileResult]:
     grouped: dict[str, list[ContainerStats]] = {}
     for row in rows:
         stat = ContainerStats(
-            container_id=row[0],
-            name=row[1],
-            timestamp=datetime.fromisoformat(row[2]).replace(tzinfo=timezone.utc),
-            cpu_percent=row[3],
-            memory_usage_mb=row[4],
-            memory_limit_mb=row[5],
-            memory_percent=row[6],
-            network_rx_mb=row[7],
-            network_tx_mb=row[8],
-            block_read_mb=row[9],
-            block_write_mb=row[10],
-            pids=row[11],
+            container_id=row["container_id"],
+            name=row["name"],
+            timestamp=datetime.fromisoformat(row["timestamp"]).replace(tzinfo=timezone.utc),
+            cpu_percent=row["cpu_percent"],
+            memory_usage_mb=row["memory_usage_mb"],
+            memory_limit_mb=row["memory_limit_mb"],
+            memory_percent=row["memory_percent"],
+            network_rx_mb=row["network_rx_mb"],
+            network_tx_mb=row["network_tx_mb"],
+            block_read_mb=row["block_read_mb"],
+            block_write_mb=row["block_write_mb"],
+            pids=row["pids"],
         )
         grouped.setdefault(stat.name, []).append(stat)
 
@@ -97,6 +98,7 @@ def _load_samples_for_session(db_path: str, session_id: str) -> list[ProfileResu
         raise typer.Exit(1)
 
     conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
 
     # Check if sessions table exists
     table_check = conn.execute(
@@ -118,7 +120,7 @@ def _load_samples_for_session(db_path: str, session_id: str) -> list[ProfileResu
         conn.close()
         raise typer.Exit(1)
 
-    _full_session_id, started_at, ended_at = row
+    _full_session_id, started_at, ended_at = row["session_id"], row["started_at"], row["ended_at"]
 
     query = "SELECT * FROM samples WHERE timestamp >= ? ORDER BY name, timestamp"
     params: list[str] = [started_at]
@@ -138,18 +140,18 @@ def _load_samples_for_session(db_path: str, session_id: str) -> list[ProfileResu
     grouped: dict[str, list[ContainerStats]] = {}
     for r in rows:
         stat = ContainerStats(
-            container_id=r[0],
-            name=r[1],
-            timestamp=datetime.fromisoformat(r[2]).replace(tzinfo=timezone.utc),
-            cpu_percent=r[3],
-            memory_usage_mb=r[4],
-            memory_limit_mb=r[5],
-            memory_percent=r[6],
-            network_rx_mb=r[7],
-            network_tx_mb=r[8],
-            block_read_mb=r[9],
-            block_write_mb=r[10],
-            pids=r[11],
+            container_id=r["container_id"],
+            name=r["name"],
+            timestamp=datetime.fromisoformat(r["timestamp"]).replace(tzinfo=timezone.utc),
+            cpu_percent=r["cpu_percent"],
+            memory_usage_mb=r["memory_usage_mb"],
+            memory_limit_mb=r["memory_limit_mb"],
+            memory_percent=r["memory_percent"],
+            network_rx_mb=r["network_rx_mb"],
+            network_tx_mb=r["network_tx_mb"],
+            block_read_mb=r["block_read_mb"],
+            block_write_mb=r["block_write_mb"],
+            pids=r["pids"],
         )
         grouped.setdefault(stat.name, []).append(stat)
 

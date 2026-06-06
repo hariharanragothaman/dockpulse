@@ -268,6 +268,17 @@ Container   Image          Create→Running   Running→Healthy   Total      Ima
 nginx       nginx:latest   142ms            —                 142ms      187.8 MB     ✗
 ```
 
+### Live Demo: Top 10 Docker Hub Images
+
+See DockPulse in action profiling the most popular containers on Docker Hub — nginx, redis, postgres, python, node, memcached, mysql, mongo, httpd, and rabbitmq — with deliberately over-provisioned limits so you can see waste detection, right-sizing, and Grafana dashboards working end to end.
+
+```bash
+cd examples/demo
+./run-demo.sh
+```
+
+The script pulls all 10 images, starts a traffic generator, profiles for 3 minutes, launches Prometheus + Grafana, and generates analysis, waste, cost, and HTML reports automatically. See [`examples/demo/README.md`](examples/demo/README.md) for options.
+
 ### Grafana Dashboards
 
 DockPulse ships with three pre-built Grafana dashboards and Prometheus recording/alerting rules. To use them with the bundled Prometheus setup:
