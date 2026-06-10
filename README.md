@@ -11,7 +11,7 @@
 <p align="center">
   <a href="https://github.com/hariharanragothaman/dockpulse/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/hariharanragothaman/dockpulse/ci.yml?branch=main&style=flat-square&logo=github&label=CI" alt="CI Status"></a>
   <a href="https://github.com/hariharanragothaman/dockpulse/blob/main/LICENSE"><img src="https://img.shields.io/github/license/hariharanragothaman/dockpulse?style=flat-square&color=blue" alt="License"></a>
-  <img src="https://img.shields.io/badge/python-3.10%20|%203.11%20|%203.12-blue?style=flat-square&logo=python&logoColor=white" alt="Python Versions">
+  <img src="https://img.shields.io/badge/python-3.10%20|%203.11%20|%203.12%20|%203.13%20|%203.14-blue?style=flat-square&logo=python&logoColor=white" alt="Python Versions">
 </p>
 
 <p align="center">
@@ -69,6 +69,13 @@ DockPulse fills this gap. It profiles your containers over time, computes percen
 
 ```bash
 pip install dockpulse
+```
+
+Or use `pipx` / `uv` for isolated CLI installs:
+
+```bash
+pipx install dockpulse
+uv tool install dockpulse
 ```
 
 Or install from source:
